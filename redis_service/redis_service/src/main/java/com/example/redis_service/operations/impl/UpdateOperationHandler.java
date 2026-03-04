@@ -23,7 +23,7 @@ public class UpdateOperationHandler implements RedisOperationHandler {
 
     @Override
     public String getOperationType() {
-        return "UPDATE IN REDIS";
+        return "UPDATE";
     }
 
     @Override

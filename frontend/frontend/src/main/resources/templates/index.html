@@ -128,7 +128,7 @@
             opacity: 0.75;
         }
 
-        /* ─── BOTTOM SPLIT ─── */
+        /* ─── BODY SPLIT ─── */
         .body-row {
             display: flex;
             gap: 14px;
@@ -150,7 +150,7 @@
 
         /* RIGHT — health + trace */
         .right-col {
-            width: 340px;
+            width: 310px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
@@ -241,13 +241,41 @@
             background: var(--red-bg);
         }
 
+        .log-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
         .log-op {
             font-family: var(--mono);
             font-size: 11.5px;
             font-weight: 600;
             color: var(--text2);
-            display: inline-block;
-            margin-bottom: 5px;
+        }
+
+        .log-status-pill {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .log-status-pill.ok {
+            background: #d4f0e4;
+            color: var(--green);
+        }
+
+        .log-status-pill.fail {
+            background: #fadddd;
+            color: var(--red);
+        }
+
+        .log-status-pill.pending {
+            background: #fdefd2;
+            color: var(--yellow);
         }
 
         .log-kv {
@@ -284,19 +312,7 @@
             font-size: 11px;
             color: var(--text3);
             flex-wrap: wrap;
-            margin-top: 2px;
-        }
-
-        .log-meta .st {
-            font-weight: 600;
-        }
-
-        .log-meta .st.ok {
-            color: var(--green);
-        }
-
-        .log-meta .st.fail {
-            color: var(--red);
+            margin-top: 4px;
         }
 
         .fetch-list {
@@ -407,7 +423,6 @@
             margin: 10px 0;
         }
 
-        /* Services — single column */
         .svc-list {
             display: flex;
             flex-direction: column;
@@ -497,7 +512,7 @@
 <body>
     <div class="page">
 
-        <!-- TOP ROW: title + controls -->
+        <!-- TOP ROW -->
         <div class="toprow">
             <span class="app-title">Redis Playground</span>
             <div class="divider-v"></div>
@@ -536,7 +551,7 @@
 
                 <!-- Health -->
                 <div class="health-card">
-                    <div class="panel-label" style="display:block;margin-bottom:10px;">Infrastructure</div>
+                    <div class="panel-label" style="display:block; margin-bottom:10px;">Infrastructure</div>
                     <div class="health-grid">
                         <div class="h-chip"><span class="dot" id="dotKafka"></span><span
                                 class="h-name">Kafka</span><span class="h-badge" id="txtKafka">—</span></div>
@@ -547,10 +562,8 @@
                         <div class="h-chip"><span class="dot" id="dotMongo"></span><span
                                 class="h-name">MongoDB</span><span class="h-badge" id="txtMongo">—</span></div>
                     </div>
-
                     <div class="health-divider"></div>
-
-                    <div class="panel-label" style="display:block;margin-bottom:8px;">Services</div>
+                    <div class="panel-label" style="display:block; margin-bottom:8px;">Services</div>
                     <div class="svc-list" id="svcRow">
                         <div class="h-chip">
                             <span class="dot up"></span>
@@ -560,7 +573,7 @@
                     </div>
                 </div>
 
-                <!-- Trace (fills remaining height) -->
+                <!-- Trace -->
                 <div class="trace-card">
                     <div class="panel-head">
                         <span class="panel-label">Trace</span>
@@ -594,7 +607,7 @@
         }
         connect();
 
-        /* Health */
+        /* ── Health ── */
         function updateHealth(data) {
             setInfra('dotKafka', 'txtKafka', data.kafkaUp);
             setInfra('dotRedis', 'txtRedis', data.redisUp);
@@ -622,7 +635,7 @@
             el.className = 'h-badge ' + (isUp ? 'up' : 'down');
         }
 
-        /* Trace */
+        /* ── Trace ── */
         function showTrace(raw) {
             const data = JSON.parse(raw);
             const ul = document.getElementById('traceList');
@@ -651,7 +664,7 @@
             scroll.scrollTop = scroll.scrollHeight;
         }
 
-        /* Send */
+        /* ── Send ── */
         function sendOperation() {
             const operation = document.getElementById("operation").value;
             const key = document.getElementById("key").value;
@@ -661,7 +674,7 @@
             document.getElementById("value").value = "";
         }
 
-        /* Field enable/disable */
+        /* ── Field enable/disable ── */
         document.getElementById("operation").addEventListener("change", function () {
             const op = this.value;
             const ki = document.getElementById("key");
@@ -675,13 +688,13 @@
             } else if (op === "SET_TTL") {
                 ki.disabled = false; vi.disabled = false; vi.placeholder = "TTL (max 10 sec)";
             } else if (op === "PAUSE_KAFKA") {
-                ki.disabled = true; ki.value = ""; vi.disabled = false; vi.placeholder = "Pause seconds (max 10)";
+                ki.disabled = true; ki.value = ""; vi.disabled = false; vi.placeholder = "Pause (max 10)";
             } else {
                 ki.disabled = false; vi.disabled = false;
             }
         });
 
-        /* Ops log */
+        /* ── Ops log ── */
         function showKVAck(message) {
             const data = JSON.parse(message);
             const ul = document.getElementById('kvAckList');
@@ -689,15 +702,32 @@
             if (empty) empty.remove();
 
             const li = document.createElement('li');
+
+            // Derive CSS class from status
+            const statusStr = (data.status || '').toString().toUpperCase();
             let cls = "log-item initiated";
-            if (data.status === "SUCCESS") cls = "log-item success";
-            if (data.status === "FAILED") cls = "log-item failed";
+            if (statusStr === "SUCCESS") cls = "log-item success";
+            if (statusStr === "FAILED") cls = "log-item failed";
             li.className = cls;
 
-            const stCls = data.status === 'SUCCESS' ? 'ok' : 'fail';
-            const ts = data.completedAt || data.timestamp || '';
+            // Status pill style
+            let pillCls = "pending";
+            if (statusStr === "SUCCESS") pillCls = "ok";
+            if (statusStr === "FAILED") pillCls = "fail";
 
-            if (data.operation === "FETCH_ALL" && data.data) {
+            // Operation label — handle both string and object
+            const opLabel = (data.operation && typeof data.operation === 'object')
+                ? (data.operation.name || JSON.stringify(data.operation))
+                : (data.operation || '—');
+
+            // Timestamp
+            const ts = data.completedAt
+                ? (typeof data.completedAt === 'object'
+                    ? `${data.completedAt.year ?? ''}-${String(data.completedAt.monthValue ?? '').padStart(2, '0')}-${String(data.completedAt.dayOfMonth ?? '').padStart(2, '0')} ${String(data.completedAt.hour ?? '').padStart(2, '0')}:${String(data.completedAt.minute ?? '').padStart(2, '0')}:${String(data.completedAt.second ?? '').padStart(2, '0')}`
+                    : data.completedAt)
+                : '';
+
+            if (opLabel === "FETCH_ALL" && data.data) {
                 const entries = Object.entries(data.data);
                 const rows = entries.length
                     ? entries.map(([k, v]) => `<div class="fetch-row">
@@ -706,20 +736,26 @@
                         <span class="fetch-val">${v}</span>
                     </div>`).join('')
                     : `<div class="fetch-row" style="color:var(--text3);font-style:italic">empty</div>`;
-                li.innerHTML = `<span class="log-op">FETCH_ALL</span>
+
+                li.innerHTML = `
+                <div class="log-header">
+                    <span class="log-op">FETCH_ALL</span>
+                    <span class="log-status-pill ${pillCls}">${statusStr || '—'}</span>
+                </div>
                 <div class="fetch-list">${rows}</div>
-                <div class="log-meta"><span class="st ${stCls}">${data.status}</span>${ts ? `<span>· ${ts}</span>` : ''}</div>`;
+                ${ts ? `<div class="log-meta"><span>${ts}</span></div>` : ''}`;
             } else {
                 const kvRows = [];
                 if (data.key) kvRows.push(`<div class="log-kv-row"><span class="log-kv-label">key</span><span class="log-kv-val">${data.key}</span></div>`);
-                if (data.value) kvRows.push(`<div class="log-kv-row"><span class="log-kv-label">val</span><span class="log-kv-val">${data.value}</span></div>`);
-                li.innerHTML = `<span class="log-op">${data.operation}</span>
+                if (data.message) kvRows.push(`<div class="log-kv-row"><span class="log-kv-label">msg</span><span class="log-kv-val">${data.message}</span></div>`);
+
+                li.innerHTML = `
+                <div class="log-header">
+                    <span class="log-op">${opLabel}</span>
+                    <span class="log-status-pill ${pillCls}">${statusStr || '—'}</span>
+                </div>
                 ${kvRows.length ? `<div class="log-kv">${kvRows.join('')}</div>` : ''}
-                <div class="log-meta">
-                    <span class="st ${stCls}">${data.status}</span>
-                    ${data.message ? `<span>· ${data.message}</span>` : ''}
-                    ${ts ? `<span>· ${ts}</span>` : ''}
-                </div>`;
+                ${ts ? `<div class="log-meta"><span>${ts}</span></div>` : ''}`;
             }
 
             opsTotal++;

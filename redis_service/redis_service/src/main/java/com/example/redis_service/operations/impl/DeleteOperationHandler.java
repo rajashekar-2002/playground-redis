@@ -23,7 +23,7 @@ public class DeleteOperationHandler implements RedisOperationHandler {
 
     @Override
     public String getOperationType() {
-        return "DELETE FROM REDIS";
+        return "DELETE";
     }
 
     @Override

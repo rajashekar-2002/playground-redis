@@ -29,7 +29,7 @@ public class FetchAllOperationHandler implements RedisOperationHandler {
 
     @Override
     public String getOperationType() {
-        return "FETCH_ALL FROM REDIS";
+        return "FETCH_ALL";
     }
 
     @Override

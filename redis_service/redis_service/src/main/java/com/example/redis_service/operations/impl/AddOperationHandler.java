@@ -36,8 +36,8 @@ public class AddOperationHandler implements RedisOperationHandler {
                 event.getUuid(),
                 event.getKey(),
                 event.getOperation(),
-                "SUCCESS",
-                "Key Added successfully",
+                "SUCCESSFULLY ADDED IN REDIS",
+                "KEY ADDED SUCCESSFULLY IN REDIS",
                 LocalDateTime.now());
 
         kafkaTemplate.send("redis_response_topic", response);
