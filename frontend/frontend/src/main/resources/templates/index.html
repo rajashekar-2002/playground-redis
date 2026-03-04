@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Redis Playground</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <style>
+        /* Global Dark Mode */
+        html,
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            /* background-color: #000 !important; */
+            /* color: #fff !important; */
+        }
+
+        Make all text white
+        /* * {
+            color: #fff !important;
+        } */
+
+
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        select,
+        input {
+            padding: 8px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+
+        ul {
+            margin-top: 20px;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        li {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+        }
+
+        .initiated {
+            background-color: #fff3cd;
+        }
+
+        .success {
+            background-color: #d4edda;
+        }
+
+        .failed {
+            background-color: #f8d7da;
+        }
+
+        input:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Redis Playground</h2>
+
+    <!-- Operation Selection -->
+    <select id="operation">
+        <option value="ADD">ADD</option>
+        <option value="DELETE">DELETE</option>
+        <option value="UPDATE">UPDATE</option>
+        <option value="GET">GET</option>
+        <option value="SET_TTL">SET_TTL</option>
+        <option value="PAUSE_KAFKA">PAUSE_KAFKA</option>
+        <option value="FETCH_ALL">FETCH_ALL</option>
+    </select>
+
+    <input type="text" id="key" placeholder="Enter Key">
+    <input type="text" id="value" placeholder="Enter Value">
+
+    <button onclick="sendOperation()">Submit</button>
+
+    <ul id="kvAckList"></ul>
+
+    <script>
+
+        let stompClient = null;
+
+        // Connect WebSocket
+        function connect() {
+
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, function () {
+
+                console.log("Connected to WebSocket");
+
+                stompClient.subscribe('/topic/kv-updates', function (message) {
+                    showKVAck(message.body);
+                });
+            });
+        }
+
+        connect();
+
+        // Send operation
+        function sendOperation() {
+
+            const operation = document.getElementById("operation").value;
+            const key = document.getElementById("key").value;
+            const value = document.getElementById("value").value;
+
+            stompClient.send("/app/operate", {}, JSON.stringify({
+                operation: operation,
+                key: key,
+                value: value
+            }));
+
+            document.getElementById("key").value = "";
+            document.getElementById("value").value = "";
+        }
+
+        // Disable value field for certain operations
+        document.getElementById("operation").addEventListener("change", function () {
+
+            const op = this.value;
+            const keyInput = document.getElementById("key");
+            const valueInput = document.getElementById("value");
+
+            if (op === "FETCH_ALL") {
+                keyInput.disabled = true;
+                valueInput.disabled = true;
+                keyInput.value = "";
+                valueInput.value = "";
+            }
+            else if (op === "DELETE" || op === "GET") {
+                keyInput.disabled = false;
+                valueInput.disabled = true;
+                valueInput.value = "";
+            }
+            else if (op === "SET_TTL") {
+                keyInput.disabled = false;
+                valueInput.disabled = false;
+                valueInput.placeholder = "TTL (max 10 sec)";
+            }
+            else if (op === "PAUSE_KAFKA") {
+                keyInput.disabled = true;
+                valueInput.disabled = false;
+                valueInput.placeholder = "Pause seconds (max 10)";
+            }
+            else {
+                keyInput.disabled = false;
+                valueInput.disabled = false;
+                valueInput.placeholder = "Enter Value";
+            }
+        });
+
+        // Display event
+        function showKVAck(message) {
+
+            const data = JSON.parse(message);
+
+            const ul = document.getElementById('kvAckList');
+            const li = document.createElement('li');
+
+            let statusClass = "initiated";
+
+            if (data.status === "SUCCESS") statusClass = "success";
+            if (data.status === "FAILED") statusClass = "failed";
+
+            li.className = statusClass;
+
+            // Special rendering for FETCH_ALL
+            if (data.operation === "FETCH_ALL" && data.data) {
+
+                let table = "<table border='1' cellpadding='5'><tr><th>Key</th><th>Value</th></tr>";
+
+                for (const key in data.data) {
+                    table += `<tr><td>${key}</td><td>${data.data[key]}</td></tr>`;
+                }
+
+                table += "</table>";
+
+                li.innerHTML =
+                    `<strong>FETCH_ALL</strong>
+             <br>Status: ${data.status}
+             <br>${table}
+             <br><small>${data.completedAt}</small>`;
+
+            } else {
+
+                li.innerHTML =
+                    `<strong>${data.operation}</strong> →
+             Key: <b>${data.key || '-'}</b>
+             ${data.value ? "| Value: <b>" + data.value + "</b>" : ""}
+             <br>Status: ${data.status}
+             ${data.message ? "<br>Message: " + data.message : ""}
+             <br><small>${data.completedAt || data.timestamp}</small>`;
+            }
+
+            ul.prepend(li);
+        }
+
+
+
+        stompClient.subscribe('/topic/kv-updates', function (message) {
+            const response = JSON.parse(message.body);
+            if (response.operation === 'DELETE' && response.status === 'SUCCESS') {
+                removeKeyFromTable(response.key);
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: trace
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: trace-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: 0
