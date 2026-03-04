@@ -27,7 +27,7 @@ public class TraceConsumer {
 
             TraceMessage message = objectMapper.readValue(cleaned, TraceMessage.class);
             System.out.println("✅ Received trace response:OOOOOOOOOOOOOOOOOOOOOO " + message);
-            messagingTemplate.convertAndSend("/topic/kv-updates", message);
+            messagingTemplate.convertAndSend("/topic/trace-updates", message);
         } catch (Exception e) {
             e.printStackTrace();
         }

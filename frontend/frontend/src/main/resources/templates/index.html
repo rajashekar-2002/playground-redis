@@ -8,36 +8,15 @@
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 
     <style>
-        /* Global Dark Mode */
-        html,
-        body {
+        html, body {
             font-family: Arial, sans-serif;
             margin: 40px;
-            /* background-color: #000 !important; */
-            /* color: #fff !important; */
         }
 
-        Make all text white
-        /* * {
-            color: #fff !important;
-        } */
+        h2 { margin-bottom: 20px; }
 
-
-
-        h2 {
-            margin-bottom: 20px;
-        }
-
-        select,
-        input {
-            padding: 8px;
-            margin-right: 10px;
-        }
-
-        button {
-            padding: 8px 14px;
-            cursor: pointer;
-        }
+        select, input { padding: 8px; margin-right: 10px; }
+        button { padding: 8px 14px; cursor: pointer; }
 
         ul {
             margin-top: 20px;
@@ -51,21 +30,76 @@
             border-radius: 6px;
         }
 
-        .initiated {
-            background-color: #fff3cd;
-        }
-
-        .success {
-            background-color: #d4edda;
-        }
-
-        .failed {
-            background-color: #f8d7da;
-        }
+        .initiated { background-color: #fff3cd; }
+        .success   { background-color: #d4edda; }
+        .failed    { background-color: #f8d7da; }
 
         input:disabled {
             background-color: #e9ecef;
             cursor: not-allowed;
+        }
+
+        /* Layout */
+        .main-layout {
+            display: flex;
+            gap: 60px;
+            align-items: flex-start;
+            margin-top: 30px;
+        }
+
+        .left-panel  { flex: 1; min-width: 0; }
+
+        .right-panel {
+            width: 300px;
+            flex-shrink: 0;
+            border-left: 2px solid #dee2e6;
+            padding-left: 30px;
+        }
+
+        .right-panel h3 {
+            margin: 0 0 16px 0;
+            font-size: 15px;
+            color: #495057;
+        }
+
+        /* Trace chain */
+        #traceList {
+            padding: 0;
+            list-style: none;
+            margin: 0;
+        }
+
+        .trace-entry {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin: 0;
+            padding: 0;
+        }
+
+        .trace-bubble {
+            background: #f1f3f5;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-family: monospace;
+            color: #212529;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 260px;
+        }
+
+        .trace-bubble strong {
+            color: #007bff;
+        }
+
+        .trace-arrow {
+            font-size: 18px;
+            color: #adb5bd;
+            line-height: 1;
+            margin: 2px 0 2px 18px;
         }
     </style>
 </head>
@@ -74,7 +108,6 @@
 
     <h2>Redis Playground</h2>
 
-    <!-- Operation Selection -->
     <select id="operation">
         <option value="ADD">ADD</option>
         <option value="DELETE">DELETE</option>
@@ -87,36 +120,79 @@
 
     <input type="text" id="key" placeholder="Enter Key">
     <input type="text" id="value" placeholder="Enter Value">
-
     <button onclick="sendOperation()">Submit</button>
 
-    <ul id="kvAckList"></ul>
+    <div class="main-layout">
+
+        <!-- LEFT — existing (unchanged) -->
+        <div class="left-panel">
+            <h3>Operations Log</h3>
+            <ul id="kvAckList"></ul>
+        </div>
+
+        <!-- RIGHT — trace chain -->
+        <div class="right-panel">
+            <h3>Trace</h3>
+            <ul id="traceList"></ul>
+        </div>
+
+    </div>
 
     <script>
 
         let stompClient = null;
 
-        // Connect WebSocket
         function connect() {
-
             const socket = new SockJS('/ws');
             stompClient = Stomp.over(socket);
 
             stompClient.connect({}, function () {
 
-                console.log("Connected to WebSocket");
-
+                // Existing — kv-updates
                 stompClient.subscribe('/topic/kv-updates', function (message) {
                     showKVAck(message.body);
+                    try {
+                        const response = JSON.parse(message.body);
+                        if (response.operation === 'DELETE' && response.status === 'SUCCESS') {
+                            removeKeyFromTable(response.key);
+                        }
+                    } catch(e) {}
+                });
+
+                // New — trace-updates
+                stompClient.subscribe('/topic/trace-updates', function (message) {
+                    showTrace(message.body);
                 });
             });
         }
 
         connect();
 
-        // Send operation
-        function sendOperation() {
+        // Render: [serviceName] : payload  then ↓
+        function showTrace(raw) {
+            const data = JSON.parse(raw);
+            const ul = document.getElementById('traceList');
 
+            // Arrow between entries (skip before the very first)
+            if (ul.children.length > 0) {
+                const arrowLi = document.createElement('li');
+                arrowLi.className = 'trace-entry';
+                arrowLi.innerHTML = `<span class="trace-arrow">↓</span>`;
+                ul.appendChild(arrowLi);
+            }
+
+            const li = document.createElement('li');
+            li.className = 'trace-entry';
+            li.innerHTML = `
+                <div class="trace-bubble">
+                    <strong>[${data.serviceName || 'unknown'}]</strong> : ${data.payload || '-'}
+                </div>
+            `;
+            ul.appendChild(li);
+        }
+
+        // Existing — send operation (unchanged)
+        function sendOperation() {
             const operation = document.getElementById("operation").value;
             const key = document.getElementById("key").value;
             const value = document.getElementById("value").value;
@@ -131,9 +207,8 @@
             document.getElementById("value").value = "";
         }
 
-        // Disable value field for certain operations
+        // Existing — field disable logic (unchanged)
         document.getElementById("operation").addEventListener("change", function () {
-
             const op = this.value;
             const keyInput = document.getElementById("key");
             const valueInput = document.getElementById("value");
@@ -143,86 +218,59 @@
                 valueInput.disabled = true;
                 keyInput.value = "";
                 valueInput.value = "";
-            }
-            else if (op === "DELETE" || op === "GET") {
+            } else if (op === "DELETE" || op === "GET") {
                 keyInput.disabled = false;
                 valueInput.disabled = true;
                 valueInput.value = "";
-            }
-            else if (op === "SET_TTL") {
+            } else if (op === "SET_TTL") {
                 keyInput.disabled = false;
                 valueInput.disabled = false;
                 valueInput.placeholder = "TTL (max 10 sec)";
-            }
-            else if (op === "PAUSE_KAFKA") {
+            } else if (op === "PAUSE_KAFKA") {
                 keyInput.disabled = true;
                 valueInput.disabled = false;
                 valueInput.placeholder = "Pause seconds (max 10)";
-            }
-            else {
+            } else {
                 keyInput.disabled = false;
                 valueInput.disabled = false;
                 valueInput.placeholder = "Enter Value";
             }
         });
 
-        // Display event
+        // Existing — render kv-updates (unchanged)
         function showKVAck(message) {
-
             const data = JSON.parse(message);
-
             const ul = document.getElementById('kvAckList');
             const li = document.createElement('li');
 
             let statusClass = "initiated";
-
             if (data.status === "SUCCESS") statusClass = "success";
-            if (data.status === "FAILED") statusClass = "failed";
-
+            if (data.status === "FAILED")  statusClass = "failed";
             li.className = statusClass;
 
-            // Special rendering for FETCH_ALL
             if (data.operation === "FETCH_ALL" && data.data) {
-
                 let table = "<table border='1' cellpadding='5'><tr><th>Key</th><th>Value</th></tr>";
-
                 for (const key in data.data) {
                     table += `<tr><td>${key}</td><td>${data.data[key]}</td></tr>`;
                 }
-
                 table += "</table>";
-
-                li.innerHTML =
-                    `<strong>FETCH_ALL</strong>
-             <br>Status: ${data.status}
-             <br>${table}
-             <br><small>${data.completedAt}</small>`;
-
+                li.innerHTML = `<strong>FETCH_ALL</strong>
+                    <br>Status: ${data.status}
+                    <br>${table}
+                    <br><small>${data.completedAt}</small>`;
             } else {
-
-                li.innerHTML =
-                    `<strong>${data.operation}</strong> →
-             Key: <b>${data.key || '-'}</b>
-             ${data.value ? "| Value: <b>" + data.value + "</b>" : ""}
-             <br>Status: ${data.status}
-             ${data.message ? "<br>Message: " + data.message : ""}
-             <br><small>${data.completedAt || data.timestamp}</small>`;
+                li.innerHTML = `<strong>${data.operation}</strong> →
+                    Key: <b>${data.key || '-'}</b>
+                    ${data.value ? "| Value: <b>" + data.value + "</b>" : ""}
+                    <br>Status: ${data.status}
+                    ${data.message ? "<br>Message: " + data.message : ""}
+                    <br><small>${data.completedAt || data.timestamp}</small>`;
             }
 
             ul.prepend(li);
         }
 
-
-
-        stompClient.subscribe('/topic/kv-updates', function (message) {
-            const response = JSON.parse(message.body);
-            if (response.operation === 'DELETE' && response.status === 'SUCCESS') {
-                removeKeyFromTable(response.key);
-            }
-        });
-
     </script>
 
 </body>
-
 </html>
