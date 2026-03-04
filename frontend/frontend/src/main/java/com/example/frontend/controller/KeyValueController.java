@@ -16,18 +16,22 @@ public class KeyValueController {
     private final KafkaTemplate<String, RedisEvent> kafkaTemplate;
     private final SimpMessagingTemplate messagingTemplate;
     private final TraceProducer traceProducer;
+    private final ServiceIdGenerator serviceIdGenerator;
 
     private static final String TOPIC = "redis_opr_request_topic";
 
     public KeyValueController(KafkaTemplate<String, RedisEvent> kafkaTemplate,
-            SimpMessagingTemplate messagingTemplate, TraceProducer traceProducer) {
+            SimpMessagingTemplate messagingTemplate, TraceProducer traceProducer, ServiceIdGenerator serviceIdGenerator) {
         this.kafkaTemplate = kafkaTemplate;
         this.messagingTemplate = messagingTemplate;
         this.traceProducer = traceProducer;
+        this.serviceIdGenerator=serviceIdGenerator;
     }
 
     @MessageMapping("/operate")
     public void handleOperation(KeyValueMessage msg) {
+
+        traceProducer.sendTrace("WebSocket request received at /operate endpoint");
 
         RedisEvent event = RedisEvent.builder()
                 .uuid(UUID.randomUUID().toString())
@@ -40,11 +44,12 @@ public class KeyValueController {
 
         kafkaTemplate.send(TOPIC, event);
 
-        traceProducer.sendTrace(TOPIC, event.getUuid());
+        traceProducer.sendTrace("Kafka event published to topic" + TOPIC);
 
         // Immediately notify frontend UI
         messagingTemplate.convertAndSend("/topic/kv-updates", event);
 
-        System.out.println("Sent to Kafka: ------------------------------------" + event);
+
+        System.out.println("Sent to Kafka:" + event);
     }
 }

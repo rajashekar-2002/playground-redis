@@ -13,17 +13,20 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import com.example.redis_service.TraceListener.producer.TraceProducer;
 
 @Service
 public class MongoTaskConsumer {
 
     private final KeyValueRepository repository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final TraceProducer traceProducer;
 
     public MongoTaskConsumer(KeyValueRepository repository,
-            KafkaTemplate<String, Object> kafkaTemplate) {
+            KafkaTemplate<String, Object> kafkaTemplate, TraceProducer traceProducer) {
         this.repository = repository;
         this.kafkaTemplate = kafkaTemplate;
+        this.traceProducer = traceProducer;
     }
 
     @RabbitListener(queues = "mongo-queue", containerFactory = "rabbitListenerContainerFactory")
@@ -32,12 +35,13 @@ public class MongoTaskConsumer {
             @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
         try {
-
+            traceProducer.sendTrace("Received from RabbitMQ : Mongo worker queue");
             // Check if a document with the same key already exists
             KeyValueDocument doc = repository.findByKey(event.getKey())
                     .orElse(null);
 
             if (doc != null) {
+                traceProducer.sendTrace("Updating existing document");
                 // UPDATE existing
                 doc.setValue(event.getValue());
                 doc.setOperation(event.getOperation());
@@ -45,6 +49,7 @@ public class MongoTaskConsumer {
                 doc.setUpdatedAt(LocalDateTime.now());
 
             } else {
+                traceProducer.sendTrace("Creating new document");
                 // CREATE new
                 doc = new KeyValueDocument();
                 doc.setId(event.getUuid()); // only set id for new document
@@ -68,11 +73,13 @@ public class MongoTaskConsumer {
                     LocalDateTime.now());
 
             kafkaTemplate.send("redis_response_topic", response);
-
+            traceProducer.sendTrace("Sent to Kafka : Redis response topic");
             // ACK
             channel.basicAck(tag, false);
+            traceProducer.sendTrace("Acked from Mongo worker queue");
 
         } catch (Exception e) {
+            traceProducer.sendTrace("Error in Mongo worker queue");
             e.printStackTrace();
             try {
                 channel.basicNack(tag, false, true); // retry

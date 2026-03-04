@@ -1,5 +1,6 @@
 package com.example.redis_service.task;
 
+import com.example.redis_service.TraceListener.producer.TraceProducer;
 import com.example.redis_service.dto.RedisEvent;
 import com.example.redis_service.operations.RedisOperationDispatcher;
 import com.rabbitmq.client.Channel;
@@ -15,11 +16,13 @@ public class RedisTaskConsumer {
 
     private final RedisOperationDispatcher dispatcher;
     private final RabbitTemplate rabbitTemplate;
+    private final TraceProducer traceProducer;
 
     public RedisTaskConsumer(RedisOperationDispatcher dispatcher,
-            RabbitTemplate rabbitTemplate) {
+            RabbitTemplate rabbitTemplate, TraceProducer traceProducer) {
         this.dispatcher = dispatcher;
         this.rabbitTemplate = rabbitTemplate;
+        this.traceProducer = traceProducer;
     }
 
     @RabbitListener(queues = "redis-queue", containerFactory = "rabbitListenerContainerFactory")
@@ -28,16 +31,14 @@ public class RedisTaskConsumer {
             @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
         try {
-
+            traceProducer.sendTrace("Received from RabbitMQ : Redis worker queue");
             dispatcher.dispatch(event);
-
-            // if (!"FETCH_ALL".equals(event.getOperation())) {
-            // rabbitTemplate.convertAndSend("mongo-queue", event);
-            // }
-
+            traceProducer.sendTrace("Sent to dispatcher");
             channel.basicAck(tag, false);
+            traceProducer.sendTrace("Acked from Redis worker queue");
 
         } catch (Exception e) {
+            traceProducer.sendTrace("Error in Redis worker queue");
 
             try {
                 channel.basicNack(tag, false, true);

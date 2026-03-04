@@ -34,6 +34,13 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
 
+               // Prevent ghost consumers from accumulating
+        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 6000); // detect dead consumer in 6s (was 45s)
+        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 2000); // heartbeat every 2s
+        props.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 10000); // kick if no poll in 10s
+        props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 8000);
+
+
         return new DefaultKafkaConsumerFactory<>(props,
                 new StringDeserializer(),
                 deserializer);
