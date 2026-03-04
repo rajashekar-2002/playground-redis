@@ -1,14 +1,22 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Redis Playground</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-        html, body {
+        html,
+        body {
             font-family: 'Inter', sans-serif;
             font-size: 14px;
             background: #f5f6fa;
@@ -71,8 +79,14 @@
             border-color: #a0a0e0;
         }
 
-        .controls input { width: 160px; }
-        .controls input:disabled { opacity: 0.45; cursor: not-allowed; }
+        .controls input {
+            width: 160px;
+        }
+
+        .controls input:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
 
         .controls button {
             font-family: 'Inter', sans-serif;
@@ -87,7 +101,9 @@
             transition: background 0.2s;
         }
 
-        .controls button:hover { background: #4848c8; }
+        .controls button:hover {
+            background: #4848c8;
+        }
 
         /* ── Two-column layout ── */
         .main-layout {
@@ -96,7 +112,10 @@
             align-items: flex-start;
         }
 
-        .left-panel { flex: 1; min-width: 0; }
+        .left-panel {
+            flex: 1;
+            min-width: 0;
+        }
 
         .right-panel {
             width: 280px;
@@ -142,14 +161,41 @@
             border-left: 3px solid #e0e0ec;
         }
 
-        .log-item.initiated { border-left-color: #f5c842; background: #fffdf0; }
-        .log-item.success   { border-left-color: #4caf82; background: #f2fbf7; }
-        .log-item.failed    { border-left-color: #e05c5c; background: #fdf2f2; }
+        .log-item.initiated {
+            border-left-color: #f5c842;
+            background: #fffdf0;
+        }
 
-        .log-item .log-op   { font-weight: 600; color: #1e1e2e; }
-        .log-item .log-meta { color: #8e8ea0; font-size: 12px; margin-top: 4px; }
-        .log-item .log-status-ok   { color: #4caf82; font-size: 12px; }
-        .log-item .log-status-fail { color: #e05c5c; font-size: 12px; }
+        .log-item.success {
+            border-left-color: #4caf82;
+            background: #f2fbf7;
+        }
+
+        .log-item.failed {
+            border-left-color: #e05c5c;
+            background: #fdf2f2;
+        }
+
+        .log-item .log-op {
+            font-weight: 600;
+            color: #1e1e2e;
+        }
+
+        .log-item .log-meta {
+            color: #8e8ea0;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .log-item .log-status-ok {
+            color: #4caf82;
+            font-size: 12px;
+        }
+
+        .log-item .log-status-fail {
+            color: #e05c5c;
+            font-size: 12px;
+        }
 
         /* ── Health block ── */
         .health-row {
@@ -168,23 +214,47 @@
             font-size: 13px;
         }
 
-        .health-name { flex: 1; color: #3a3a4c; }
+        .health-name {
+            flex: 1;
+            color: #3a3a4c;
+        }
 
         .dot {
-            width: 8px; height: 8px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: #d0d0e0;
             flex-shrink: 0;
             transition: background 0.4s, box-shadow 0.4s;
         }
-        .dot.up   { background: #4caf82; box-shadow: 0 0 5px #4caf8270; }
-        .dot.down { background: #e05c5c; }
 
-        .status-text { font-size: 11px; font-weight: 500; }
-        .status-text.up   { color: #4caf82; }
-        .status-text.down { color: #e05c5c; }
+        .dot.up {
+            background: #4caf82;
+            box-shadow: 0 0 5px #4caf8270;
+        }
 
-        .svc-empty { color: #b0b0c0; font-size: 12px; font-style: italic; }
+        .dot.down {
+            background: #e05c5c;
+        }
+
+        .status-text {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-text.up {
+            color: #4caf82;
+        }
+
+        .status-text.down {
+            color: #e05c5c;
+        }
+
+        .svc-empty {
+            color: #b0b0c0;
+            font-size: 12px;
+            font-style: italic;
+        }
 
         /* ── Trace chain ── */
         #traceList {
@@ -231,233 +301,234 @@
         }
     </style>
 </head>
+
 <body>
-<div class="page">
+    <div class="page">
 
-    <!-- Header -->
-    <div class="page-header">
-        <h1>Redis Playground</h1>
-        <p>Real-time key-value operations over Kafka + WebSocket</p>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-        <select id="operation">
-            <option value="ADD">ADD</option>
-            <option value="DELETE">DELETE</option>
-            <option value="UPDATE">UPDATE</option>
-            <option value="GET">GET</option>
-            <option value="SET_TTL">SET_TTL</option>
-            <option value="PAUSE_KAFKA">PAUSE_KAFKA</option>
-            <option value="FETCH_ALL">FETCH_ALL</option>
-        </select>
-        <input type="text" id="key" placeholder="Key">
-        <input type="text" id="value" placeholder="Value">
-        <button onclick="sendOperation()">Send</button>
-    </div>
-
-    <!-- Two-column layout -->
-    <div class="main-layout">
-
-        <!-- LEFT — Operations log -->
-        <div class="left-panel card">
-            <div class="card-title">Operations Log</div>
-            <ul id="kvAckList"></ul>
+        <!-- Header -->
+        <div class="page-header">
+            <h1>Redis Playground</h1>
+            <p>Real-time key-value operations over Kafka + WebSocket</p>
         </div>
 
-        <!-- RIGHT — Health + Trace -->
-        <div class="right-panel">
+        <!-- Controls -->
+        <div class="controls">
+            <select id="operation">
+                <option value="ADD">ADD</option>
+                <option value="DELETE">DELETE</option>
+                <option value="UPDATE">UPDATE</option>
+                <option value="GET">GET</option>
+                <option value="SET_TTL">SET_TTL</option>
+                <option value="PAUSE_KAFKA">PAUSE_KAFKA</option>
+                <option value="FETCH_ALL">FETCH_ALL</option>
+            </select>
+            <input type="text" id="key" placeholder="Key">
+            <input type="text" id="value" placeholder="Value">
+            <button onclick="sendOperation()">Send</button>
+        </div>
 
-            <!-- Health card -->
-            <div class="card">
-                <div class="card-title">Infrastructure</div>
-                <div class="health-row">
-                    <div class="health-chip">
-                        <span class="dot" id="dotKafka"></span>
-                        <span class="health-name">Kafka</span>
-                        <span class="status-text" id="txtKafka">—</span>
+        <!-- Two-column layout -->
+        <div class="main-layout">
+
+            <!-- LEFT — Operations log -->
+            <div class="left-panel card">
+                <div class="card-title">Operations Log</div>
+                <ul id="kvAckList"></ul>
+            </div>
+
+            <!-- RIGHT — Health + Trace -->
+            <div class="right-panel">
+
+                <!-- Health card -->
+                <div class="card">
+                    <div class="card-title">Infrastructure</div>
+                    <div class="health-row">
+                        <div class="health-chip">
+                            <span class="dot" id="dotKafka"></span>
+                            <span class="health-name">Kafka</span>
+                            <span class="status-text" id="txtKafka">—</span>
+                        </div>
+                        <div class="health-chip">
+                            <span class="dot" id="dotRedis"></span>
+                            <span class="health-name">Redis</span>
+                            <span class="status-text" id="txtRedis">—</span>
+                        </div>
+                        <div class="health-chip">
+                            <span class="dot" id="dotRabbit"></span>
+                            <span class="health-name">RabbitMQ</span>
+                            <span class="status-text" id="txtRabbit">—</span>
+                        </div>
+                        <div class="health-chip">
+                            <span class="dot" id="dotMongo"></span>
+                            <span class="health-name">MongoDB</span>
+                            <span class="status-text" id="txtMongo">—</span>
+                        </div>
                     </div>
-                    <div class="health-chip">
-                        <span class="dot" id="dotRedis"></span>
-                        <span class="health-name">Redis</span>
-                        <span class="status-text" id="txtRedis">—</span>
-                    </div>
-                    <div class="health-chip">
-                        <span class="dot" id="dotRabbit"></span>
-                        <span class="health-name">RabbitMQ</span>
-                        <span class="status-text" id="txtRabbit">—</span>
-                    </div>
-                    <div class="health-chip">
-                        <span class="dot" id="dotMongo"></span>
-                        <span class="health-name">MongoDB</span>
-                        <span class="status-text" id="txtMongo">—</span>
+
+                    <div class="section-divider" style="margin-top:14px;"></div>
+                    <div class="card-title">Services</div>
+                    <div class="health-row" id="svcRow">
+                        <span class="svc-empty">waiting for services...</span>
                     </div>
                 </div>
 
-                <div class="section-divider" style="margin-top:14px;"></div>
-                <div class="card-title">Services</div>
-                <div class="health-row" id="svcRow">
-                    <span class="svc-empty">waiting for services...</span>
+                <!-- Trace card -->
+                <div class="card">
+                    <div class="card-title">Trace</div>
+                    <ul id="traceList"></ul>
                 </div>
-            </div>
 
-            <!-- Trace card -->
-            <div class="card">
-                <div class="card-title">Trace</div>
-                <ul id="traceList"></ul>
             </div>
-
         </div>
     </div>
-</div>
 
-<script>
+    <script>
 
-    let stompClient = null;
+        let stompClient = null;
 
-    function connect() {
-        const socket = new SockJS('/ws');
-        stompClient = Stomp.over(socket);
-        stompClient.debug = null;
+        function connect() {
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null;
 
-        stompClient.connect({}, function () {
+            stompClient.connect({}, function () {
 
-            // kv-updates — left panel
-            stompClient.subscribe('/topic/kv-updates', function (message) {
-                showKVAck(message.body);
-                try {
-                    const r = JSON.parse(message.body);
-                    if (r.operation === 'DELETE' && r.status === 'SUCCESS') {
-                        removeKeyFromTable(r.key);
-                    }
-                } catch(e) {}
+                // kv-updates — left panel
+                stompClient.subscribe('/topic/kv-updates', function (message) {
+                    showKVAck(message.body);
+                    try {
+                        const r = JSON.parse(message.body);
+                        if (r.operation === 'DELETE' && r.status === 'SUCCESS') {
+                            removeKeyFromTable(r.key);
+                        }
+                    } catch (e) { }
+                });
+
+                // trace-updates — right panel
+                stompClient.subscribe('/topic/trace-updates', function (message) {
+                    showTrace(message.body);
+                });
+
+                // health-updates — right panel health card
+                stompClient.subscribe('/topic/health-updates', function (message) {
+                    updateHealth(JSON.parse(message.body));
+                });
             });
-
-            // trace-updates — right panel
-            stompClient.subscribe('/topic/trace-updates', function (message) {
-                showTrace(message.body);
-            });
-
-            // health-updates — right panel health card
-            stompClient.subscribe('/topic/health-updates', function (message) {
-                updateHealth(JSON.parse(message.body));
-            });
-        });
-    }
-
-    connect();
-
-    // ── Health ───────────────────────────────────────────────────────
-    function updateHealth(data) {
-        setInfra('dotKafka',  'txtKafka',  data.kafkaUp);
-        setInfra('dotRedis',  'txtRedis',  data.redisUp);
-        setInfra('dotRabbit', 'txtRabbit', data.rabbitUp);
-        setInfra('dotMongo',  'txtMongo',  data.mongoUp);
-
-        const svcRow  = document.getElementById('svcRow');
-        const instances = data.serviceInstances || {};
-        const names   = Object.keys(instances);
-
-        if (names.length === 0) {
-            svcRow.innerHTML = '<span class="svc-empty">no services yet</span>';
-            return;
         }
 
-        svcRow.innerHTML = names.map(name => {
-            const isUp = instances[name] === 'UP';
-            return `<div class="health-chip">
+        connect();
+
+        // ── Health ───────────────────────────────────────────────────────
+        function updateHealth(data) {
+            setInfra('dotKafka', 'txtKafka', data.kafkaUp);
+            setInfra('dotRedis', 'txtRedis', data.redisUp);
+            setInfra('dotRabbit', 'txtRabbit', data.rabbitUp);
+            setInfra('dotMongo', 'txtMongo', data.mongoUp);
+
+            const svcRow = document.getElementById('svcRow');
+            const instances = data.serviceInstances || {};
+            const names = Object.keys(instances);
+
+            if (names.length === 0) {
+                svcRow.innerHTML = '<span class="svc-empty">no services yet</span>';
+                return;
+            }
+
+            svcRow.innerHTML = names.map(name => {
+                const isUp = instances[name] === 'UP';
+                return `<div class="health-chip">
                         <span class="dot ${isUp ? 'up' : 'down'}"></span>
                         <span class="health-name">${name}</span>
                         <span class="status-text ${isUp ? 'up' : 'down'}">${isUp ? 'UP' : 'DOWN'}</span>
                     </div>`;
-        }).join('');
-    }
-
-    function setInfra(dotId, txtId, isUp) {
-        document.getElementById(dotId).className = 'dot ' + (isUp ? 'up' : 'down');
-        const txt = document.getElementById(txtId);
-        txt.textContent = isUp ? 'UP' : 'DOWN';
-        txt.className   = 'status-text ' + (isUp ? 'up' : 'down');
-    }
-
-    // ── Trace ────────────────────────────────────────────────────────
-    function showTrace(raw) {
-        const data = JSON.parse(raw);
-        const ul   = document.getElementById('traceList');
-
-        if (ul.children.length > 0) {
-            const arrowLi = document.createElement('li');
-            arrowLi.className = 'trace-entry';
-            arrowLi.innerHTML = `<span class="trace-arrow">↓</span>`;
-            ul.appendChild(arrowLi);
+            }).join('');
         }
 
-        const li = document.createElement('li');
-        li.className = 'trace-entry';
-        li.innerHTML = `<div class="trace-bubble">
+        function setInfra(dotId, txtId, isUp) {
+            document.getElementById(dotId).className = 'dot ' + (isUp ? 'up' : 'down');
+            const txt = document.getElementById(txtId);
+            txt.textContent = isUp ? 'UP' : 'DOWN';
+            txt.className = 'status-text ' + (isUp ? 'up' : 'down');
+        }
+
+        // ── Trace ────────────────────────────────────────────────────────
+        function showTrace(raw) {
+            const data = JSON.parse(raw);
+            const ul = document.getElementById('traceList');
+
+            if (ul.children.length > 0) {
+                const arrowLi = document.createElement('li');
+                arrowLi.className = 'trace-entry';
+                arrowLi.innerHTML = `<span class="trace-arrow">↓</span>`;
+                ul.appendChild(arrowLi);
+            }
+
+            const li = document.createElement('li');
+            li.className = 'trace-entry';
+            li.innerHTML = `<div class="trace-bubble">
             <span class="svc-name">[${data.serviceName || 'unknown'}]</span> : ${data.payload || '-'}
         </div>`;
-        ul.appendChild(li);
-    }
-
-    // ── Send operation ───────────────────────────────────────────────
-    function sendOperation() {
-        const operation = document.getElementById("operation").value;
-        const key       = document.getElementById("key").value;
-        const value     = document.getElementById("value").value;
-
-        stompClient.send("/app/operate", {}, JSON.stringify({ operation, key, value }));
-
-        document.getElementById("key").value   = "";
-        document.getElementById("value").value = "";
-    }
-
-    // ── Field disable logic ──────────────────────────────────────────
-    document.getElementById("operation").addEventListener("change", function () {
-        const op         = this.value;
-        const keyInput   = document.getElementById("key");
-        const valueInput = document.getElementById("value");
-
-        if (op === "FETCH_ALL") {
-            keyInput.disabled = true; valueInput.disabled = true;
-            keyInput.value = ""; valueInput.value = "";
-        } else if (op === "DELETE" || op === "GET") {
-            keyInput.disabled = false; valueInput.disabled = true; valueInput.value = "";
-        } else if (op === "SET_TTL") {
-            keyInput.disabled = false; valueInput.disabled = false;
-            valueInput.placeholder = "TTL (max 10 sec)";
-        } else if (op === "PAUSE_KAFKA") {
-            keyInput.disabled = true; valueInput.disabled = false;
-            valueInput.placeholder = "Pause seconds (max 10)";
-        } else {
-            keyInput.disabled = false; valueInput.disabled = false;
-            valueInput.placeholder = "Value";
+            ul.appendChild(li);
         }
-    });
 
-    // ── Render kv-updates ────────────────────────────────────────────
-    function showKVAck(message) {
-        const data = JSON.parse(message);
-        const ul   = document.getElementById('kvAckList');
-        const li   = document.createElement('li');
+        // ── Send operation ───────────────────────────────────────────────
+        function sendOperation() {
+            const operation = document.getElementById("operation").value;
+            const key = document.getElementById("key").value;
+            const value = document.getElementById("value").value;
 
-        let cls = "log-item initiated";
-        if (data.status === "SUCCESS") cls = "log-item success";
-        if (data.status === "FAILED")  cls = "log-item failed";
-        li.className = cls;
+            stompClient.send("/app/operate", {}, JSON.stringify({ operation, key, value }));
 
-        if (data.operation === "FETCH_ALL" && data.data) {
-            let table = "<table border='1' cellpadding='5' style='margin-top:6px;font-size:12px'><tr><th>Key</th><th>Value</th></tr>";
-            for (const key in data.data) {
-                table += `<tr><td>${key}</td><td>${data.data[key]}</td></tr>`;
+            document.getElementById("key").value = "";
+            document.getElementById("value").value = "";
+        }
+
+        // ── Field disable logic ──────────────────────────────────────────
+        document.getElementById("operation").addEventListener("change", function () {
+            const op = this.value;
+            const keyInput = document.getElementById("key");
+            const valueInput = document.getElementById("value");
+
+            if (op === "FETCH_ALL") {
+                keyInput.disabled = true; valueInput.disabled = true;
+                keyInput.value = ""; valueInput.value = "";
+            } else if (op === "DELETE" || op === "GET") {
+                keyInput.disabled = false; valueInput.disabled = true; valueInput.value = "";
+            } else if (op === "SET_TTL") {
+                keyInput.disabled = false; valueInput.disabled = false;
+                valueInput.placeholder = "TTL (max 10 sec)";
+            } else if (op === "PAUSE_KAFKA") {
+                keyInput.disabled = true; valueInput.disabled = false;
+                valueInput.placeholder = "Pause seconds (max 10)";
+            } else {
+                keyInput.disabled = false; valueInput.disabled = false;
+                valueInput.placeholder = "Value";
             }
-            table += "</table>";
-            li.innerHTML = `<span class="log-op">FETCH_ALL</span>
+        });
+
+        // ── Render kv-updates ────────────────────────────────────────────
+        function showKVAck(message) {
+            const data = JSON.parse(message);
+            const ul = document.getElementById('kvAckList');
+            const li = document.createElement('li');
+
+            let cls = "log-item initiated";
+            if (data.status === "SUCCESS") cls = "log-item success";
+            if (data.status === "FAILED") cls = "log-item failed";
+            li.className = cls;
+
+            if (data.operation === "FETCH_ALL" && data.data) {
+                let table = "<table border='1' cellpadding='5' style='margin-top:6px;font-size:12px'><tr><th>Key</th><th>Value</th></tr>";
+                for (const key in data.data) {
+                    table += `<tr><td>${key}</td><td>${data.data[key]}</td></tr>`;
+                }
+                table += "</table>";
+                li.innerHTML = `<span class="log-op">FETCH_ALL</span>
                 <div class="log-meta">Status: ${data.status} &nbsp;·&nbsp; ${data.completedAt || ''}</div>
                 ${table}`;
-        } else {
-            const statusCls = data.status === 'SUCCESS' ? 'log-status-ok' : 'log-status-fail';
-            li.innerHTML = `<span class="log-op">${data.operation}</span>
+            } else {
+                const statusCls = data.status === 'SUCCESS' ? 'log-status-ok' : 'log-status-fail';
+                li.innerHTML = `<span class="log-op">${data.operation}</span>
                 &nbsp;→&nbsp; <b>${data.key || '-'}</b>
                 ${data.value ? `&nbsp;:&nbsp; <b>${data.value}</b>` : ''}
                 <div class="log-meta">
@@ -465,11 +536,12 @@
                     ${data.message ? ' &nbsp;·&nbsp; ' + data.message : ''}
                     &nbsp;·&nbsp; <span>${data.completedAt || data.timestamp || ''}</span>
                 </div>`;
+            }
+
+            ul.prepend(li);
         }
 
-        ul.prepend(li);
-    }
-
-</script>
+    </script>
 </body>
+
 </html>

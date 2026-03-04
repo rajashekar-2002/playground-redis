@@ -31,7 +31,7 @@ public class TraceConsumer {
             TraceMessage message = objectMapper.readValue(jsonMessage, TraceMessage.class);
             logger.info("Received trace message: {}", message);
 
-            message.setServiceName("trace-service");
+            message.setServiceName(message.getServiceName());
             message.setServiceId(serviceId);
 
             traceProducer.sendTraceResponse(message);

@@ -16,16 +16,12 @@ public class TraceConsumer {
     private final ServiceRegistry serviceRegistry;
 
     public TraceConsumer(SimpMessagingTemplate messagingTemplate,
-                         ServiceRegistry serviceRegistry) {
+            ServiceRegistry serviceRegistry) {
         this.messagingTemplate = messagingTemplate;
         this.serviceRegistry = serviceRegistry;
     }
 
-    @KafkaListener(
-        topics = "trace-response-topic",
-        groupId = "frontend-trace-group",
-        containerFactory = "traceKafkaListenerContainerFactory"
-    )
+    @KafkaListener(topics = "trace-response-topic", containerFactory = "traceKafkaListenerContainerFactory")
     public void consumeTraceResponse(String jsonMessage) {
         try {
             // Strip outer quotes if double-serialized

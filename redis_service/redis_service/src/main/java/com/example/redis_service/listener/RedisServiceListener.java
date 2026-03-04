@@ -18,7 +18,7 @@ public class RedisServiceListener {
         this.traceProducer = traceProducer;
     }
 
-    @KafkaListener(id = "redisListener", topics = "redis_opr_request_topic", groupId = "redis-service-group")
+    @KafkaListener(id = "redisListener", topics = "redis_opr_request_topic", containerFactory = "kafkaListenerContainerFactory")
     public void listen(RedisEvent event) {
 
         traceProducer.sendTrace("Received from Kafka topic redis_opr_request_topic");
