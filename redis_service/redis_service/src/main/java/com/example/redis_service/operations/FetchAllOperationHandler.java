@@ -29,7 +29,7 @@ public class FetchAllOperationHandler implements RedisOperationHandler {
 
     @Override
     public String getOperationType() {
-        return "FETCH_ALL";
+        return "FETCH_ALL FROM REDIS";
     }
 
     @Override
@@ -50,8 +50,8 @@ public class FetchAllOperationHandler implements RedisOperationHandler {
         RedisResponseEvent response = RedisResponseEvent.builder()
                 .uuid(event.getUuid())
                 .operation(event.getOperation())
-                .status("SUCCESS")
-                .message("Fetched all keys")
+                .status("SUCCESSFULLY FETCHED ALL KEYS FROM REDIS")
+                .message("Fetched all keys from Redis")
                 .completedAt(LocalDateTime.now())
                 .data(result)
                 .build();

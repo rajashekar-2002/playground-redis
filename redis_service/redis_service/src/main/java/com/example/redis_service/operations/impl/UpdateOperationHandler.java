@@ -23,7 +23,7 @@ public class UpdateOperationHandler implements RedisOperationHandler {
 
     @Override
     public String getOperationType() {
-        return "UPDATE";
+        return "UPDATE IN REDIS";
     }
 
     @Override
@@ -36,7 +36,7 @@ public class UpdateOperationHandler implements RedisOperationHandler {
                 .uuid(event.getUuid())
                 .key(event.getKey())
                 .operation(event.getOperation())
-                .status("SUCCESS")
+                .status("SUCCESSFULLY UPDATED IN REDIS")
                 .message("Key updated successfully in Redis")
                 .completedAt(LocalDateTime.now())
                 .build();

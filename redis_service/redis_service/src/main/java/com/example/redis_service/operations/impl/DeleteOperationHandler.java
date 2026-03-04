@@ -23,7 +23,7 @@ public class DeleteOperationHandler implements RedisOperationHandler {
 
     @Override
     public String getOperationType() {
-        return "DELETE";
+        return "DELETE FROM REDIS";
     }
 
     @Override
@@ -37,8 +37,8 @@ public class DeleteOperationHandler implements RedisOperationHandler {
                 event.getUuid(),
                 event.getKey(),
                 event.getOperation(),
-                "SUCCESS",
-                "Key deleted successfully",
+                "SUCCESSFULLY DELETED FROM REDIS",
+                "Key deleted successfully from Redis",
                 LocalDateTime.now());
 
         kafkaTemplate.send("redis_response_topic", response);

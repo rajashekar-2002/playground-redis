@@ -8,4 +8,6 @@ import com.example.redis_service.models.KeyValueDocument;
 
 public interface KeyValueRepository extends MongoRepository<KeyValueDocument, String> {
     Optional<KeyValueDocument> findByKey(String key);
+
+    void deleteByKey(String key);
 }

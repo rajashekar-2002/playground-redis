@@ -31,9 +31,20 @@ public class RedisServiceListener {
         // Only send to Mongo worker queue if operation is not DELETE
 
         String op = event.getOperation();
-        if (!"DELETE".equalsIgnoreCase(op) && !"FETCH_ALL".equals(op) && !"SET_TTL".equals(op)) {
+        // if (!"DELETE".equalsIgnoreCase(op) && !"FETCH_ALL".equals(op) &&
+        // !"SET_TTL".equals(op)) {
+        // traceProducer.sendTrace("Sent to RabbitMQ : Mongo worker queue");
+        // rabbitTemplate.convertAndSend(RabbitConfig.MONGO_QUEUE, event); // use your
+        // configured queue
+        // }
+
+        // Send to Mongo ONLY for specific operations
+        if ("DELETE".equalsIgnoreCase(op)
+                || "UPDATE".equalsIgnoreCase(op)
+                || "SET".equalsIgnoreCase(op)) {
+
+            rabbitTemplate.convertAndSend(RabbitConfig.MONGO_QUEUE, event);
             traceProducer.sendTrace("Sent to RabbitMQ : Mongo worker queue");
-            rabbitTemplate.convertAndSend(RabbitConfig.MONGO_QUEUE, event); // use your configured queue
         }
 
     }

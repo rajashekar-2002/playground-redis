@@ -3,7 +3,9 @@
 
 <head>
     <title>Redis Playground</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <style>
@@ -15,252 +17,434 @@
             padding: 0;
         }
 
+        :root {
+            --bg: #f4f4f5;
+            --white: #ffffff;
+            --border: #e2e2e5;
+            --text: #1a1a1a;
+            --text2: #555555;
+            --text3: #aaaaaa;
+            --green: #27a065;
+            --green-bg: #eef8f3;
+            --red: #c93535;
+            --red-bg: #fdf2f2;
+            --yellow: #aa7700;
+            --yellow-bg: #fdf8ed;
+            --blue: #1e50a8;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Inter', sans-serif;
+        }
+
         html,
         body {
-            font-family: 'Inter', sans-serif;
+            height: 100%;
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
             font-size: 14px;
-            background: #f5f6fa;
-            color: #3a3a4c;
-            min-height: 100vh;
         }
 
-        /* ── Page wrapper ── */
         .page {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 36px 32px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 18px 20px 14px;
+            gap: 14px;
         }
 
-        /* ── Header ── */
-        .page-header {
-            margin-bottom: 28px;
-        }
-
-        .page-header h1 {
-            font-size: 22px;
-            font-weight: 600;
-            color: #1e1e2e;
-            letter-spacing: -0.3px;
-        }
-
-        .page-header p {
-            margin-top: 4px;
-            color: #8e8ea0;
-            font-size: 13px;
-        }
-
-        /* ── Controls bar ── */
-        .controls {
+        /* ─── TOP ROW ─── */
+        .toprow {
             display: flex;
             align-items: center;
-            gap: 10px;
-            background: #fff;
-            border: 1px solid #e8e8f0;
-            border-radius: 10px;
-            padding: 14px 18px;
-            margin-bottom: 28px;
+            gap: 12px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 12px 16px;
+            flex-shrink: 0;
         }
 
-        .controls select,
-        .controls input {
-            font-family: 'Inter', sans-serif;
+        .app-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            margin-right: 4px;
+        }
+
+        .divider-v {
+            width: 1px;
+            height: 22px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+
+        .toprow select,
+        .toprow input {
+            font-family: var(--mono);
             font-size: 13px;
-            color: #3a3a4c;
-            background: #f5f6fa;
-            border: 1px solid #e0e0ec;
-            border-radius: 7px;
-            padding: 8px 12px;
+            color: var(--text);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 7px 11px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.15s;
         }
 
-        .controls select:focus,
-        .controls input:focus {
-            border-color: #a0a0e0;
+        .toprow select:focus,
+        .toprow input:focus {
+            border-color: #999;
         }
 
-        .controls input {
-            width: 160px;
+        .toprow input {
+            width: 148px;
         }
 
-        .controls input:disabled {
-            opacity: 0.45;
+        .toprow input::placeholder {
+            color: var(--text3);
+        }
+
+        .toprow input:disabled {
+            opacity: 0.38;
             cursor: not-allowed;
         }
 
-        .controls button {
-            font-family: 'Inter', sans-serif;
+        .toprow button {
+            font-family: var(--sans);
             font-size: 13px;
             font-weight: 500;
-            background: #5c5ce0;
+            background: var(--text);
             color: #fff;
             border: none;
-            border-radius: 7px;
-            padding: 8px 20px;
+            border-radius: 6px;
+            padding: 7px 20px;
             cursor: pointer;
-            transition: background 0.2s;
+            white-space: nowrap;
+            transition: opacity 0.15s;
         }
 
-        .controls button:hover {
-            background: #4848c8;
+        .toprow button:hover {
+            opacity: 0.75;
         }
 
-        /* ── Two-column layout ── */
-        .main-layout {
+        /* ─── BOTTOM SPLIT ─── */
+        .body-row {
             display: flex;
-            gap: 24px;
-            align-items: flex-start;
+            gap: 14px;
+            flex: 1;
+            min-height: 0;
         }
 
-        .left-panel {
+        /* LEFT — operations log */
+        .left-col {
             flex: 1;
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            overflow: hidden;
         }
 
-        .right-panel {
-            width: 280px;
+        /* RIGHT — health + trace */
+        .right-col {
+            width: 340px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
+            min-height: 0;
         }
 
-        /* ── Card base ── */
-        .card {
-            background: #fff;
-            border: 1px solid #e8e8f0;
-            border-radius: 10px;
-            padding: 18px;
+        /* ─── Panel header ─── */
+        .panel-head {
+            padding: 12px 16px 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
         }
 
-        .card-title {
+        .panel-label {
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: #8e8ea0;
-            margin-bottom: 14px;
+            letter-spacing: 1px;
+            color: var(--text3);
         }
 
-        /* ── Operations log ── */
+        .badge-count {
+            font-size: 11px;
+            font-family: var(--mono);
+            color: var(--text3);
+        }
+
+        /* ─── Ops log scroll ─── */
+        .ops-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 16px;
+        }
+
+        .ops-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .ops-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
         #kvAckList {
             list-style: none;
-            padding: 0;
-            margin: 0;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 7px;
         }
 
         .log-item {
-            background: #fff;
-            border: 1px solid #e8e8f0;
-            border-radius: 8px;
-            padding: 12px 14px;
-            font-size: 13px;
-            border-left: 3px solid #e0e0ec;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--border);
+            border-radius: 7px;
+            padding: 10px 13px;
+            background: var(--white);
+            animation: popIn 0.18s ease;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: translateY(-3px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
         }
 
         .log-item.initiated {
-            border-left-color: #f5c842;
-            background: #fffdf0;
+            border-left-color: var(--yellow);
+            background: var(--yellow-bg);
         }
 
         .log-item.success {
-            border-left-color: #4caf82;
-            background: #f2fbf7;
+            border-left-color: var(--green);
+            background: var(--green-bg);
         }
 
         .log-item.failed {
-            border-left-color: #e05c5c;
-            background: #fdf2f2;
+            border-left-color: var(--red);
+            background: var(--red-bg);
         }
 
-        .log-item .log-op {
+        .log-op {
+            font-family: var(--mono);
+            font-size: 11.5px;
             font-weight: 600;
-            color: #1e1e2e;
+            color: var(--text2);
+            display: inline-block;
+            margin-bottom: 5px;
         }
 
-        .log-item .log-meta {
-            color: #8e8ea0;
-            font-size: 12px;
-            margin-top: 4px;
-        }
-
-        .log-item .log-status-ok {
-            color: #4caf82;
-            font-size: 12px;
-        }
-
-        .log-item .log-status-fail {
-            color: #e05c5c;
-            font-size: 12px;
-        }
-
-        /* ── Health block ── */
-        .health-row {
+        .log-kv {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 2px;
+            margin-bottom: 5px;
         }
 
-        .health-chip {
+        .log-kv-row {
+            display: flex;
+            gap: 8px;
+            font-family: var(--mono);
+            font-size: 13px;
+            align-items: baseline;
+        }
+
+        .log-kv-label {
+            color: var(--text3);
+            font-size: 11px;
+            min-width: 26px;
+        }
+
+        .log-kv-val {
+            color: var(--text);
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .log-meta {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 10px;
-            background: #f5f6fa;
-            border-radius: 7px;
-            font-size: 13px;
-        }
-
-        .health-name {
-            flex: 1;
-            color: #3a3a4c;
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #d0d0e0;
-            flex-shrink: 0;
-            transition: background 0.4s, box-shadow 0.4s;
-        }
-
-        .dot.up {
-            background: #4caf82;
-            box-shadow: 0 0 5px #4caf8270;
-        }
-
-        .dot.down {
-            background: #e05c5c;
-        }
-
-        .status-text {
+            gap: 5px;
             font-size: 11px;
+            color: var(--text3);
+            flex-wrap: wrap;
+            margin-top: 2px;
+        }
+
+        .log-meta .st {
+            font-weight: 600;
+        }
+
+        .log-meta .st.ok {
+            color: var(--green);
+        }
+
+        .log-meta .st.fail {
+            color: var(--red);
+        }
+
+        .fetch-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin: 5px 0;
+        }
+
+        .fetch-row {
+            display: flex;
+            gap: 8px;
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.65);
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 12px;
+            align-items: baseline;
+        }
+
+        .fetch-key {
+            color: var(--blue);
             font-weight: 500;
         }
 
-        .status-text.up {
-            color: #4caf82;
+        .fetch-sep {
+            color: var(--text3);
         }
 
-        .status-text.down {
-            color: #e05c5c;
+        .fetch-val {
+            color: var(--text);
+            word-break: break-all;
         }
 
-        .svc-empty {
-            color: #b0b0c0;
-            font-size: 12px;
-            font-style: italic;
+        .empty-state {
+            color: var(--text3);
+            font-size: 13px;
+            text-align: center;
+            padding: 32px 0;
         }
 
-        /* ── Trace chain ── */
+        /* ─── Health card ─── */
+        .health-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 14px 16px;
+            flex-shrink: 0;
+        }
+
+        .health-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .h-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            background: var(--bg);
+            border-radius: 6px;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #d0d0d0;
+            flex-shrink: 0;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .dot.up {
+            background: var(--green);
+            box-shadow: 0 0 5px rgba(39, 160, 101, 0.45);
+        }
+
+        .dot.down {
+            background: var(--red);
+            box-shadow: 0 0 5px rgba(201, 53, 53, 0.35);
+        }
+
+        .h-name {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text2);
+        }
+
+        .h-badge {
+            font-size: 11px;
+            font-weight: 600;
+            font-family: var(--mono);
+        }
+
+        .h-badge.up {
+            color: var(--green);
+        }
+
+        .h-badge.down {
+            color: var(--red);
+        }
+
+        .health-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 10px 0;
+        }
+
+        /* Services — single column */
+        .svc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        /* ─── Trace card ─── */
+        .trace-card {
+            flex: 1;
+            min-height: 0;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .trace-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 14px;
+        }
+
+        .trace-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .trace-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
         #traceList {
             list-style: none;
-            padding: 0;
-            margin: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         .trace-entry {
@@ -270,34 +454,42 @@
         }
 
         .trace-bubble {
-            background: #f0f0fb;
-            border: 1px solid #e0e0f0;
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
             border-radius: 7px;
-            padding: 7px 12px;
-            font-size: 12.5px;
-            font-family: 'Inter', sans-serif;
-            color: #3a3a4c;
-            max-width: 100%;
+            padding: 9px 13px;
+            font-family: var(--mono);
+            line-height: 1.55;
             word-break: break-all;
         }
 
-        .trace-bubble .svc-name {
+        .trace-svc {
+            font-size: 12px;
             font-weight: 600;
-            color: #5c5ce0;
+            color: var(--blue);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .trace-payload {
+            font-size: 13px;
+            color: var(--text);
         }
 
         .trace-arrow {
             font-size: 14px;
-            color: #c0c0d8;
-            margin: 3px 0 3px 10px;
+            color: var(--text3);
+            margin: 3px 0 3px 14px;
             line-height: 1;
+            user-select: none;
         }
 
-        /* ── Divider between sections ── */
-        .section-divider {
-            height: 1px;
-            background: #e8e8f0;
-            margin: 4px 0 14px 0;
+        .trace-empty {
+            color: var(--text3);
+            font-size: 13px;
+            text-align: center;
+            padding: 24px 0;
         }
     </style>
 </head>
@@ -305,14 +497,10 @@
 <body>
     <div class="page">
 
-        <!-- Header -->
-        <div class="page-header">
-            <h1>Redis Playground</h1>
-            <p>Real-time key-value operations over Kafka + WebSocket</p>
-        </div>
-
-        <!-- Controls -->
-        <div class="controls">
+        <!-- TOP ROW: title + controls -->
+        <div class="toprow">
+            <span class="app-title">Redis Playground</span>
+            <div class="divider-v"></div>
             <select id="operation">
                 <option value="ADD">ADD</option>
                 <option value="DELETE">DELETE</option>
@@ -327,55 +515,62 @@
             <button onclick="sendOperation()">Send</button>
         </div>
 
-        <!-- Two-column layout -->
-        <div class="main-layout">
+        <!-- BODY SPLIT -->
+        <div class="body-row">
 
-            <!-- LEFT — Operations log -->
-            <div class="left-panel card">
-                <div class="card-title">Operations Log</div>
-                <ul id="kvAckList"></ul>
+            <!-- LEFT: Operations log -->
+            <div class="left-col">
+                <div class="panel-head">
+                    <span class="panel-label">Operations Log</span>
+                    <span class="badge-count" id="opsCount"></span>
+                </div>
+                <div class="ops-scroll">
+                    <ul id="kvAckList">
+                        <li class="empty-state" id="emptyLog">No operations yet</li>
+                    </ul>
+                </div>
             </div>
 
-            <!-- RIGHT — Health + Trace -->
-            <div class="right-panel">
+            <!-- RIGHT: Health + Trace -->
+            <div class="right-col">
 
-                <!-- Health card -->
-                <div class="card">
-                    <div class="card-title">Infrastructure</div>
-                    <div class="health-row">
-                        <div class="health-chip">
-                            <span class="dot" id="dotKafka"></span>
-                            <span class="health-name">Kafka</span>
-                            <span class="status-text" id="txtKafka">—</span>
-                        </div>
-                        <div class="health-chip">
-                            <span class="dot" id="dotRedis"></span>
-                            <span class="health-name">Redis</span>
-                            <span class="status-text" id="txtRedis">—</span>
-                        </div>
-                        <div class="health-chip">
-                            <span class="dot" id="dotRabbit"></span>
-                            <span class="health-name">RabbitMQ</span>
-                            <span class="status-text" id="txtRabbit">—</span>
-                        </div>
-                        <div class="health-chip">
-                            <span class="dot" id="dotMongo"></span>
-                            <span class="health-name">MongoDB</span>
-                            <span class="status-text" id="txtMongo">—</span>
-                        </div>
+                <!-- Health -->
+                <div class="health-card">
+                    <div class="panel-label" style="display:block;margin-bottom:10px;">Infrastructure</div>
+                    <div class="health-grid">
+                        <div class="h-chip"><span class="dot" id="dotKafka"></span><span
+                                class="h-name">Kafka</span><span class="h-badge" id="txtKafka">—</span></div>
+                        <div class="h-chip"><span class="dot" id="dotRedis"></span><span
+                                class="h-name">Redis</span><span class="h-badge" id="txtRedis">—</span></div>
+                        <div class="h-chip"><span class="dot" id="dotRabbit"></span><span
+                                class="h-name">RabbitMQ</span><span class="h-badge" id="txtRabbit">—</span></div>
+                        <div class="h-chip"><span class="dot" id="dotMongo"></span><span
+                                class="h-name">MongoDB</span><span class="h-badge" id="txtMongo">—</span></div>
                     </div>
 
-                    <div class="section-divider" style="margin-top:14px;"></div>
-                    <div class="card-title">Services</div>
-                    <div class="health-row" id="svcRow">
-                        <span class="svc-empty">waiting for services...</span>
+                    <div class="health-divider"></div>
+
+                    <div class="panel-label" style="display:block;margin-bottom:8px;">Services</div>
+                    <div class="svc-list" id="svcRow">
+                        <div class="h-chip">
+                            <span class="dot up"></span>
+                            <span class="h-name">trace_service</span>
+                            <span class="h-badge up">UP</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Trace card -->
-                <div class="card">
-                    <div class="card-title">Trace</div>
-                    <ul id="traceList"></ul>
+                <!-- Trace (fills remaining height) -->
+                <div class="trace-card">
+                    <div class="panel-head">
+                        <span class="panel-label">Trace</span>
+                        <span class="badge-count" id="traceCount"></span>
+                    </div>
+                    <div class="trace-scroll" id="traceScroll">
+                        <ul id="traceList">
+                            <li class="trace-empty" id="traceEmpty">Waiting for events…</li>
+                        </ul>
+                    </div>
                 </div>
 
             </div>
@@ -383,42 +578,23 @@
     </div>
 
     <script>
-
         let stompClient = null;
+        let traceTotal = 0;
+        let opsTotal = 0;
 
         function connect() {
             const socket = new SockJS('/ws');
             stompClient = Stomp.over(socket);
             stompClient.debug = null;
-
             stompClient.connect({}, function () {
-
-                // kv-updates — left panel
-                stompClient.subscribe('/topic/kv-updates', function (message) {
-                    showKVAck(message.body);
-                    try {
-                        const r = JSON.parse(message.body);
-                        if (r.operation === 'DELETE' && r.status === 'SUCCESS') {
-                            removeKeyFromTable(r.key);
-                        }
-                    } catch (e) { }
-                });
-
-                // trace-updates — right panel
-                stompClient.subscribe('/topic/trace-updates', function (message) {
-                    showTrace(message.body);
-                });
-
-                // health-updates — right panel health card
-                stompClient.subscribe('/topic/health-updates', function (message) {
-                    updateHealth(JSON.parse(message.body));
-                });
+                stompClient.subscribe('/topic/kv-updates', function (m) { showKVAck(m.body); });
+                stompClient.subscribe('/topic/trace-updates', function (m) { showTrace(m.body); });
+                stompClient.subscribe('/topic/health-updates', function (m) { updateHealth(JSON.parse(m.body)); });
             });
         }
-
         connect();
 
-        // ── Health ───────────────────────────────────────────────────────
+        /* Health */
         function updateHealth(data) {
             setInfra('dotKafka', 'txtKafka', data.kafkaUp);
             setInfra('dotRedis', 'txtRedis', data.redisUp);
@@ -427,120 +603,129 @@
 
             const svcRow = document.getElementById('svcRow');
             const instances = data.serviceInstances || {};
-            const names = Object.keys(instances);
+            const merged = { trace_service: 'UP', ...instances };
 
-            if (names.length === 0) {
-                svcRow.innerHTML = '<span class="svc-empty">no services yet</span>';
-                return;
-            }
-
-            svcRow.innerHTML = names.map(name => {
-                const isUp = instances[name] === 'UP';
-                return `<div class="health-chip">
-                        <span class="dot ${isUp ? 'up' : 'down'}"></span>
-                        <span class="health-name">${name}</span>
-                        <span class="status-text ${isUp ? 'up' : 'down'}">${isUp ? 'UP' : 'DOWN'}</span>
-                    </div>`;
+            svcRow.innerHTML = Object.entries(merged).map(([name, status]) => {
+                const up = status === 'UP';
+                return `<div class="h-chip">
+                <span class="dot ${up ? 'up' : 'down'}"></span>
+                <span class="h-name">${name}</span>
+                <span class="h-badge ${up ? 'up' : 'down'}">${up ? 'UP' : 'DOWN'}</span>
+            </div>`;
             }).join('');
         }
 
         function setInfra(dotId, txtId, isUp) {
             document.getElementById(dotId).className = 'dot ' + (isUp ? 'up' : 'down');
-            const txt = document.getElementById(txtId);
-            txt.textContent = isUp ? 'UP' : 'DOWN';
-            txt.className = 'status-text ' + (isUp ? 'up' : 'down');
+            const el = document.getElementById(txtId);
+            el.textContent = isUp ? 'UP' : 'DOWN';
+            el.className = 'h-badge ' + (isUp ? 'up' : 'down');
         }
 
-        // ── Trace ────────────────────────────────────────────────────────
+        /* Trace */
         function showTrace(raw) {
             const data = JSON.parse(raw);
             const ul = document.getElementById('traceList');
+            const scroll = document.getElementById('traceScroll');
+
+            const empty = document.getElementById('traceEmpty');
+            if (empty) empty.remove();
 
             if (ul.children.length > 0) {
-                const arrowLi = document.createElement('li');
-                arrowLi.className = 'trace-entry';
-                arrowLi.innerHTML = `<span class="trace-arrow">↓</span>`;
-                ul.appendChild(arrowLi);
+                const a = document.createElement('li');
+                a.className = 'trace-entry';
+                a.innerHTML = `<span class="trace-arrow">↓</span>`;
+                ul.appendChild(a);
             }
 
             const li = document.createElement('li');
             li.className = 'trace-entry';
             li.innerHTML = `<div class="trace-bubble">
-            <span class="svc-name">[${data.serviceName || 'unknown'}]</span> : ${data.payload || '-'}
+            <span class="trace-svc">[${data.serviceName || 'unknown'}]</span>
+            <span class="trace-payload">${data.payload || '-'}</span>
         </div>`;
             ul.appendChild(li);
+
+            traceTotal++;
+            document.getElementById('traceCount').textContent = traceTotal + (traceTotal === 1 ? ' event' : ' events');
+            scroll.scrollTop = scroll.scrollHeight;
         }
 
-        // ── Send operation ───────────────────────────────────────────────
+        /* Send */
         function sendOperation() {
             const operation = document.getElementById("operation").value;
             const key = document.getElementById("key").value;
             const value = document.getElementById("value").value;
-
             stompClient.send("/app/operate", {}, JSON.stringify({ operation, key, value }));
-
             document.getElementById("key").value = "";
             document.getElementById("value").value = "";
         }
 
-        // ── Field disable logic ──────────────────────────────────────────
+        /* Field enable/disable */
         document.getElementById("operation").addEventListener("change", function () {
             const op = this.value;
-            const keyInput = document.getElementById("key");
-            const valueInput = document.getElementById("value");
+            const ki = document.getElementById("key");
+            const vi = document.getElementById("value");
+            vi.placeholder = "Value";
 
             if (op === "FETCH_ALL") {
-                keyInput.disabled = true; valueInput.disabled = true;
-                keyInput.value = ""; valueInput.value = "";
+                ki.disabled = true; vi.disabled = true; ki.value = ""; vi.value = "";
             } else if (op === "DELETE" || op === "GET") {
-                keyInput.disabled = false; valueInput.disabled = true; valueInput.value = "";
+                ki.disabled = false; vi.disabled = true; vi.value = "";
             } else if (op === "SET_TTL") {
-                keyInput.disabled = false; valueInput.disabled = false;
-                valueInput.placeholder = "TTL (max 10 sec)";
+                ki.disabled = false; vi.disabled = false; vi.placeholder = "TTL (max 10 sec)";
             } else if (op === "PAUSE_KAFKA") {
-                keyInput.disabled = true; valueInput.disabled = false;
-                valueInput.placeholder = "Pause seconds (max 10)";
+                ki.disabled = true; ki.value = ""; vi.disabled = false; vi.placeholder = "Pause seconds (max 10)";
             } else {
-                keyInput.disabled = false; valueInput.disabled = false;
-                valueInput.placeholder = "Value";
+                ki.disabled = false; vi.disabled = false;
             }
         });
 
-        // ── Render kv-updates ────────────────────────────────────────────
+        /* Ops log */
         function showKVAck(message) {
             const data = JSON.parse(message);
             const ul = document.getElementById('kvAckList');
-            const li = document.createElement('li');
+            const empty = document.getElementById('emptyLog');
+            if (empty) empty.remove();
 
+            const li = document.createElement('li');
             let cls = "log-item initiated";
             if (data.status === "SUCCESS") cls = "log-item success";
             if (data.status === "FAILED") cls = "log-item failed";
             li.className = cls;
 
+            const stCls = data.status === 'SUCCESS' ? 'ok' : 'fail';
+            const ts = data.completedAt || data.timestamp || '';
+
             if (data.operation === "FETCH_ALL" && data.data) {
-                let table = "<table border='1' cellpadding='5' style='margin-top:6px;font-size:12px'><tr><th>Key</th><th>Value</th></tr>";
-                for (const key in data.data) {
-                    table += `<tr><td>${key}</td><td>${data.data[key]}</td></tr>`;
-                }
-                table += "</table>";
+                const entries = Object.entries(data.data);
+                const rows = entries.length
+                    ? entries.map(([k, v]) => `<div class="fetch-row">
+                        <span class="fetch-key">${k}</span>
+                        <span class="fetch-sep">:</span>
+                        <span class="fetch-val">${v}</span>
+                    </div>`).join('')
+                    : `<div class="fetch-row" style="color:var(--text3);font-style:italic">empty</div>`;
                 li.innerHTML = `<span class="log-op">FETCH_ALL</span>
-                <div class="log-meta">Status: ${data.status} &nbsp;·&nbsp; ${data.completedAt || ''}</div>
-                ${table}`;
+                <div class="fetch-list">${rows}</div>
+                <div class="log-meta"><span class="st ${stCls}">${data.status}</span>${ts ? `<span>· ${ts}</span>` : ''}</div>`;
             } else {
-                const statusCls = data.status === 'SUCCESS' ? 'log-status-ok' : 'log-status-fail';
+                const kvRows = [];
+                if (data.key) kvRows.push(`<div class="log-kv-row"><span class="log-kv-label">key</span><span class="log-kv-val">${data.key}</span></div>`);
+                if (data.value) kvRows.push(`<div class="log-kv-row"><span class="log-kv-label">val</span><span class="log-kv-val">${data.value}</span></div>`);
                 li.innerHTML = `<span class="log-op">${data.operation}</span>
-                &nbsp;→&nbsp; <b>${data.key || '-'}</b>
-                ${data.value ? `&nbsp;:&nbsp; <b>${data.value}</b>` : ''}
+                ${kvRows.length ? `<div class="log-kv">${kvRows.join('')}</div>` : ''}
                 <div class="log-meta">
-                    <span class="${statusCls}">${data.status}</span>
-                    ${data.message ? ' &nbsp;·&nbsp; ' + data.message : ''}
-                    &nbsp;·&nbsp; <span>${data.completedAt || data.timestamp || ''}</span>
+                    <span class="st ${stCls}">${data.status}</span>
+                    ${data.message ? `<span>· ${data.message}</span>` : ''}
+                    ${ts ? `<span>· ${ts}</span>` : ''}
                 </div>`;
             }
 
+            opsTotal++;
+            document.getElementById('opsCount').textContent = opsTotal + (opsTotal === 1 ? ' entry' : ' entries');
             ul.prepend(li);
         }
-
     </script>
 </body>
 
