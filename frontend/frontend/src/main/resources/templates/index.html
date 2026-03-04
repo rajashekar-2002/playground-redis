@@ -1,16 +1,14 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Redis Playground</title>
-
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-
     <style>
         html, body {
             font-family: Arial, sans-serif;
             margin: 40px;
+            background: #fff;
         }
 
         h2 { margin-bottom: 20px; }
@@ -18,28 +16,16 @@
         select, input { padding: 8px; margin-right: 10px; }
         button { padding: 8px 14px; cursor: pointer; }
 
-        ul {
-            margin-top: 20px;
-            padding-left: 0;
-            list-style: none;
-        }
-
-        li {
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-        }
+        ul { margin-top: 20px; padding-left: 0; list-style: none; }
+        li { padding: 10px; margin-bottom: 10px; border-radius: 6px; }
 
         .initiated { background-color: #fff3cd; }
         .success   { background-color: #d4edda; }
         .failed    { background-color: #f8d7da; }
 
-        input:disabled {
-            background-color: #e9ecef;
-            cursor: not-allowed;
-        }
+        input:disabled { background-color: #e9ecef; cursor: not-allowed; }
 
-        /* Layout */
+        /* ── Two-column layout ── */
         .main-layout {
             display: flex;
             gap: 60px;
@@ -47,7 +33,7 @@
             margin-top: 30px;
         }
 
-        .left-panel  { flex: 1; min-width: 0; }
+        .left-panel { flex: 1; min-width: 0; }
 
         .right-panel {
             width: 300px;
@@ -56,25 +42,102 @@
             padding-left: 30px;
         }
 
-        .right-panel h3 {
-            margin: 0 0 16px 0;
-            font-size: 15px;
-            color: #495057;
+        /* ── Health & instances block (top of right panel) ── */
+        .health-block {
+            background: #212529;
+            color: #fff;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 24px;
+            font-size: 12px;
         }
 
-        /* Trace chain */
-        #traceList {
-            padding: 0;
-            list-style: none;
-            margin: 0;
+        .health-block .section-label {
+            color: #adb5bd;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: bold;
         }
+
+        /* infra row */
+        .infra-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .infra-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #343a40;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #6c757d;
+            flex-shrink: 0;
+            transition: background 0.4s;
+        }
+        .dot.up   { background: #28a745; box-shadow: 0 0 5px #28a745; }
+        .dot.down { background: #dc3545; }
+
+        .infra-name { flex: 1; }
+
+        .status-text { font-size: 10px; }
+        .status-text.up   { color: #28a745; }
+        .status-text.down { color: #dc3545; }
+
+        /* services row */
+        .svc-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .svc-chip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #343a40;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: default;
+        }
+
+        .svc-count {
+            background: #007bff;
+            color: #fff;
+            border-radius: 10px;
+            padding: 1px 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .svc-empty {
+            color: #6c757d;
+            font-size: 11px;
+            font-style: italic;
+        }
+
+        /* ── Trace chain ── */
+        .right-panel h3 { margin: 0 0 12px 0; font-size: 15px; color: #495057; }
+
+        #traceList { padding: 0; list-style: none; margin: 0; }
 
         .trace-entry {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
         }
 
         .trace-bubble {
@@ -91,9 +154,7 @@
             max-width: 260px;
         }
 
-        .trace-bubble strong {
-            color: #007bff;
-        }
+        .trace-bubble strong { color: #007bff; }
 
         .trace-arrow {
             font-size: 18px;
@@ -103,7 +164,6 @@
         }
     </style>
 </head>
-
 <body>
 
     <h2>Redis Playground</h2>
@@ -124,18 +184,54 @@
 
     <div class="main-layout">
 
-        <!-- LEFT — existing (unchanged) -->
+        <!-- LEFT — existing operations log (unchanged) -->
         <div class="left-panel">
             <h3>Operations Log</h3>
             <ul id="kvAckList"></ul>
         </div>
 
-        <!-- RIGHT — trace chain -->
+        <!-- RIGHT — health + instances + trace -->
         <div class="right-panel">
+
+            <!-- Health & instances block -->
+            <div class="health-block">
+
+                <div class="section-label">Infrastructure</div>
+                <div class="infra-row">
+                    <div class="infra-chip">
+                        <span class="dot" id="dotKafka"></span>
+                        <span class="infra-name">Kafka</span>
+                        <span class="status-text" id="txtKafka">—</span>
+                    </div>
+                    <div class="infra-chip">
+                        <span class="dot" id="dotRedis"></span>
+                        <span class="infra-name">Redis</span>
+                        <span class="status-text" id="txtRedis">—</span>
+                    </div>
+                    <div class="infra-chip">
+                        <span class="dot" id="dotRabbit"></span>
+                        <span class="infra-name">RabbitMQ</span>
+                        <span class="status-text" id="txtRabbit">—</span>
+                    </div>
+                    <div class="infra-chip">
+                        <span class="dot" id="dotMongo"></span>
+                        <span class="infra-name">MongoDB</span>
+                        <span class="status-text" id="txtMongo">—</span>
+                    </div>
+                </div>
+
+                <div class="section-label">Services</div>
+                <div class="svc-row" id="svcRow">
+                    <span class="svc-empty">waiting for services...</span>
+                </div>
+
+            </div>
+
+            <!-- Trace chain -->
             <h3>Trace</h3>
             <ul id="traceList"></ul>
-        </div>
 
+        </div>
     </div>
 
     <script>
@@ -145,35 +241,74 @@
         function connect() {
             const socket = new SockJS('/ws');
             stompClient = Stomp.over(socket);
+            stompClient.debug = null;
 
             stompClient.connect({}, function () {
 
-                // Existing — kv-updates
+                // Existing — kv-updates (left panel, unchanged)
                 stompClient.subscribe('/topic/kv-updates', function (message) {
                     showKVAck(message.body);
                     try {
-                        const response = JSON.parse(message.body);
-                        if (response.operation === 'DELETE' && response.status === 'SUCCESS') {
-                            removeKeyFromTable(response.key);
+                        const r = JSON.parse(message.body);
+                        if (r.operation === 'DELETE' && r.status === 'SUCCESS') {
+                            removeKeyFromTable(r.key);
                         }
                     } catch(e) {}
                 });
 
-                // New — trace-updates
+                // Trace — right panel
                 stompClient.subscribe('/topic/trace-updates', function (message) {
                     showTrace(message.body);
+                });
+
+                // Health — right panel top block
+                stompClient.subscribe('/topic/health-updates', function (message) {
+                    updateHealth(JSON.parse(message.body));
                 });
             });
         }
 
         connect();
 
-        // Render: [serviceName] : payload  then ↓
+        // ── Health update ────────────────────────────────────────────
+        function updateHealth(data) {
+            setInfra('dotKafka',  'txtKafka',  data.kafkaUp);
+            setInfra('dotRedis',  'txtRedis',  data.redisUp);
+            setInfra('dotRabbit', 'txtRabbit', data.rabbitUp);
+            setInfra('dotMongo',  'txtMongo',  data.mongoUp);
+
+            const svcRow = document.getElementById('svcRow');
+            const instances = data.serviceInstances || {};
+            const names = Object.keys(instances);
+
+            if (names.length === 0) {
+                svcRow.innerHTML = '<span class="svc-empty">no services yet</span>';
+                return;
+            }
+
+            svcRow.innerHTML = names.map(name => {
+                const ids   = instances[name];
+                const count = ids.length;
+                const tip   = ids.join('\n');
+                return `<div class="svc-chip" title="${tip}">
+                            <span>${name}</span>
+                            <span class="svc-count">${count} instance${count > 1 ? 's' : ''}</span>
+                        </div>`;
+            }).join('');
+        }
+
+        function setInfra(dotId, txtId, isUp) {
+            document.getElementById(dotId).className = 'dot ' + (isUp ? 'up' : 'down');
+            const txt = document.getElementById(txtId);
+            txt.textContent = isUp ? 'UP' : 'DOWN';
+            txt.className   = 'status-text ' + (isUp ? 'up' : 'down');
+        }
+
+        // ── Trace chain ──────────────────────────────────────────────
         function showTrace(raw) {
             const data = JSON.parse(raw);
             const ul = document.getElementById('traceList');
 
-            // Arrow between entries (skip before the very first)
             if (ul.children.length > 0) {
                 const arrowLi = document.createElement('li');
                 arrowLi.className = 'trace-entry';
@@ -183,65 +318,52 @@
 
             const li = document.createElement('li');
             li.className = 'trace-entry';
-            li.innerHTML = `
-                <div class="trace-bubble">
-                    <strong>[${data.serviceName || 'unknown'}]</strong> : ${data.payload || '-'}
-                </div>
-            `;
+            li.innerHTML = `<div class="trace-bubble">
+                <strong>[${data.serviceName || 'unknown'}]</strong> : ${data.payload || '-'}
+            </div>`;
             ul.appendChild(li);
         }
 
-        // Existing — send operation (unchanged)
+        // ── Send operation (unchanged) ───────────────────────────────
         function sendOperation() {
             const operation = document.getElementById("operation").value;
-            const key = document.getElementById("key").value;
-            const value = document.getElementById("value").value;
+            const key       = document.getElementById("key").value;
+            const value     = document.getElementById("value").value;
 
-            stompClient.send("/app/operate", {}, JSON.stringify({
-                operation: operation,
-                key: key,
-                value: value
-            }));
+            stompClient.send("/app/operate", {}, JSON.stringify({ operation, key, value }));
 
-            document.getElementById("key").value = "";
+            document.getElementById("key").value   = "";
             document.getElementById("value").value = "";
         }
 
-        // Existing — field disable logic (unchanged)
+        // ── Field disable logic (unchanged) ──────────────────────────
         document.getElementById("operation").addEventListener("change", function () {
-            const op = this.value;
-            const keyInput = document.getElementById("key");
+            const op         = this.value;
+            const keyInput   = document.getElementById("key");
             const valueInput = document.getElementById("value");
 
             if (op === "FETCH_ALL") {
-                keyInput.disabled = true;
-                valueInput.disabled = true;
-                keyInput.value = "";
-                valueInput.value = "";
+                keyInput.disabled = true; valueInput.disabled = true;
+                keyInput.value = ""; valueInput.value = "";
             } else if (op === "DELETE" || op === "GET") {
-                keyInput.disabled = false;
-                valueInput.disabled = true;
-                valueInput.value = "";
+                keyInput.disabled = false; valueInput.disabled = true; valueInput.value = "";
             } else if (op === "SET_TTL") {
-                keyInput.disabled = false;
-                valueInput.disabled = false;
+                keyInput.disabled = false; valueInput.disabled = false;
                 valueInput.placeholder = "TTL (max 10 sec)";
             } else if (op === "PAUSE_KAFKA") {
-                keyInput.disabled = true;
-                valueInput.disabled = false;
+                keyInput.disabled = true; valueInput.disabled = false;
                 valueInput.placeholder = "Pause seconds (max 10)";
             } else {
-                keyInput.disabled = false;
-                valueInput.disabled = false;
+                keyInput.disabled = false; valueInput.disabled = false;
                 valueInput.placeholder = "Enter Value";
             }
         });
 
-        // Existing — render kv-updates (unchanged)
+        // ── Render kv-updates (unchanged) ────────────────────────────
         function showKVAck(message) {
             const data = JSON.parse(message);
-            const ul = document.getElementById('kvAckList');
-            const li = document.createElement('li');
+            const ul   = document.getElementById('kvAckList');
+            const li   = document.createElement('li');
 
             let statusClass = "initiated";
             if (data.status === "SUCCESS") statusClass = "success";
@@ -254,10 +376,7 @@
                     table += `<tr><td>${key}</td><td>${data.data[key]}</td></tr>`;
                 }
                 table += "</table>";
-                li.innerHTML = `<strong>FETCH_ALL</strong>
-                    <br>Status: ${data.status}
-                    <br>${table}
-                    <br><small>${data.completedAt}</small>`;
+                li.innerHTML = `<strong>FETCH_ALL</strong><br>Status: ${data.status}<br>${table}<br><small>${data.completedAt}</small>`;
             } else {
                 li.innerHTML = `<strong>${data.operation}</strong> →
                     Key: <b>${data.key || '-'}</b>
@@ -271,6 +390,5 @@
         }
 
     </script>
-
 </body>
 </html>
