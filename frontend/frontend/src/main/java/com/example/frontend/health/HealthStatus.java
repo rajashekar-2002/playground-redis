@@ -1,6 +1,5 @@
 package com.example.frontend.health;
 
-import java.util.List;
 import java.util.Map;
 
 import lombok.AllArgsConstructor;
@@ -14,6 +13,8 @@ public class HealthStatus {
     private boolean kafkaUp;
     private boolean redisUp;
     private boolean rabbitUp;
-    private boolean mongoUp;                        // ← added
-    private Map<String, List<String>> serviceInstances;
+    private boolean mongoUp;
+
+    // serviceName -> "UP" or "DOWN"
+    private Map<String, String> serviceInstances;
 }

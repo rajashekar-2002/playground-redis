@@ -1,42 +1,74 @@
 package com.example.frontend.health;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class ServiceRegistry {
 
-    // serviceName -> Set of unique serviceIds seen
-    private final Map<String, Set<String>> registry = new ConcurrentHashMap<>();
+    private static final long STALE_THRESHOLD_MS = 90_000; // 90s = 3 missed heartbeats
 
-    /**
-     * Called every time a TraceMessage arrives.
-     * Registers the serviceId under the serviceName.
-     */
-    public void register(String serviceName, String serviceId) {
-        if (serviceName == null || serviceId == null) return;
-        registry
-            .computeIfAbsent(serviceName, k -> ConcurrentHashMap.newKeySet())
-            .add(serviceId);
+    // serviceName -> lastSeenTimestamp (any instance counts)
+    private final Map<String, Long> registry = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public void register(String serviceName) {
+        if (serviceName == null) return;
+        registry.put(serviceName, Instant.now().toEpochMilli());
+    }
+
+    @KafkaListener(
+        topics = "service-registry-topic",
+        groupId = "frontend-registry-group",
+        containerFactory = "traceKafkaListenerContainerFactory"
+    )
+    public void onAnnouncement(String jsonMessage) {
+        try {
+            Map<?, ?> msg      = objectMapper.readValue(jsonMessage, Map.class);
+            String serviceName = (String) msg.get("serviceName");
+            String status      = (String) msg.get("status");
+
+            if ("DOWN".equals(status)) {
+                // Only remove if NO other instance has checked in recently
+                Long lastSeen = registry.get(serviceName);
+                if (lastSeen != null &&
+                    (Instant.now().toEpochMilli() - lastSeen) > 5_000) {
+                    // last heartbeat was more than 5s ago — safe to mark down
+                    registry.remove(serviceName);
+                }
+                System.out.println("📴 Service DOWN: " + serviceName);
+            } else {
+                register(serviceName);
+                System.out.println("📡 Service UP: " + serviceName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
-     * Returns a snapshot: serviceName -> sorted list of serviceIds
+     * Returns serviceName -> "UP" or "DOWN"
+     * UP   = any instance heartbeated within 90s
+     * DOWN = no heartbeat for 90s or explicit DOWN received
      */
-    public Map<String, List<String>> getSnapshot() {
-        Map<String, List<String>> snapshot = new LinkedHashMap<>();
-        registry.forEach((name, ids) -> {
-            List<String> sorted = new ArrayList<>(ids);
-            Collections.sort(sorted);
-            snapshot.put(name, sorted);
-        });
+    public Map<String, String> getSnapshot() {
+        long now = Instant.now().toEpochMilli();
+        Map<String, String> snapshot = new LinkedHashMap<>();
+
+        // Remove fully stale entries first
+        registry.entrySet().removeIf(e -> (now - e.getValue()) > STALE_THRESHOLD_MS);
+
+        registry.forEach((name, lastSeen) ->
+            snapshot.put(name, "UP")
+        );
+
         return snapshot;
     }
 }
