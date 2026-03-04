@@ -7,38 +7,44 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.listener.MessageListenerContainer;
 import org.springframework.stereotype.Service;
 
+import com.example.redis_service.traceListener.producer.TraceProducer;
+
 @Service
 public class KafkaControlService {
 
     private final KafkaListenerEndpointRegistry registry;
+    private final TraceProducer traceProducer;
 
-    public KafkaControlService(KafkaListenerEndpointRegistry registry) {
+    public KafkaControlService(KafkaListenerEndpointRegistry registry, TraceProducer traceProducer) {
         this.registry = registry;
+        this.traceProducer = traceProducer;
     }
 
     public void pauseListener(String listenerId, int seconds) {
+        traceProducer.sendTrace("Pausing Kafka listener for " + seconds + " seconds");
 
         MessageListenerContainer container = registry.getListenerContainer(listenerId);
 
         if (container == null) {
-            System.out.println("Listener not found: " + listenerId);
+            traceProducer.sendTrace("Listener not found: " + listenerId);
             return;
         }
 
         if (container.isPauseRequested()) {
-            System.out.println("Listener already paused");
+            traceProducer.sendTrace("Listener already paused");
             return;
         }
 
-        System.out.println("Pausing Kafka listener...");
+        traceProducer.sendTrace("Pausing Kafka listener...");
         container.pause();
 
         Executors.newSingleThreadScheduledExecutor()
                 .schedule(() -> {
                     try {
-                        System.out.println("Resuming Kafka listener...");
+                        traceProducer.sendTrace("Resuming Kafka listener...");
                         container.resume();
                     } catch (Exception e) {
+                        traceProducer.sendTrace("Error resuming Kafka listener");
                         e.printStackTrace();
                     }
                 }, seconds, TimeUnit.SECONDS);

@@ -2,6 +2,8 @@ package com.example.redis_service.operations;
 
 import com.example.redis_service.dto.RedisEvent;
 import com.example.redis_service.dto.RedisResponseEvent;
+import com.example.redis_service.traceListener.producer.TraceProducer;
+
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -16,11 +18,13 @@ public class FetchAllOperationHandler implements RedisOperationHandler {
 
     private final StringRedisTemplate redisTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final TraceProducer traceProducer;
 
     public FetchAllOperationHandler(StringRedisTemplate redisTemplate,
-            KafkaTemplate<String, Object> kafkaTemplate) {
+            KafkaTemplate<String, Object> kafkaTemplate, TraceProducer traceProducer) {
         this.redisTemplate = redisTemplate;
         this.kafkaTemplate = kafkaTemplate;
+        this.traceProducer = traceProducer;
     }
 
     @Override
@@ -31,6 +35,7 @@ public class FetchAllOperationHandler implements RedisOperationHandler {
     @Override
     public void handle(RedisEvent event) {
 
+        traceProducer.sendTrace("Fetching all keys");
         Set<String> keys = redisTemplate.keys("*");
 
         Map<String, String> result = new HashMap<>();
@@ -52,5 +57,6 @@ public class FetchAllOperationHandler implements RedisOperationHandler {
                 .build();
 
         kafkaTemplate.send("redis_response_topic", response);
+        traceProducer.sendTrace("Sent response to Kafka");
     }
 }

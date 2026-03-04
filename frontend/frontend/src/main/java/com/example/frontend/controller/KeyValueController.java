@@ -16,16 +16,15 @@ public class KeyValueController {
     private final KafkaTemplate<String, RedisEvent> kafkaTemplate;
     private final SimpMessagingTemplate messagingTemplate;
     private final TraceProducer traceProducer;
-    private final ServiceIdGenerator serviceIdGenerator;
 
     private static final String TOPIC = "redis_opr_request_topic";
 
     public KeyValueController(KafkaTemplate<String, RedisEvent> kafkaTemplate,
-            SimpMessagingTemplate messagingTemplate, TraceProducer traceProducer, ServiceIdGenerator serviceIdGenerator) {
+            SimpMessagingTemplate messagingTemplate, TraceProducer traceProducer) {
         this.kafkaTemplate = kafkaTemplate;
         this.messagingTemplate = messagingTemplate;
         this.traceProducer = traceProducer;
-        this.serviceIdGenerator=serviceIdGenerator;
+
     }
 
     @MessageMapping("/operate")
@@ -48,7 +47,6 @@ public class KeyValueController {
 
         // Immediately notify frontend UI
         messagingTemplate.convertAndSend("/topic/kv-updates", event);
-
 
         System.out.println("Sent to Kafka:" + event);
     }

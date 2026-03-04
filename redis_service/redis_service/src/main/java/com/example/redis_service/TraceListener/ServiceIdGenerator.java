@@ -1,4 +1,4 @@
-package com.example.frontend.TraceListener;
+package com.example.redis_service.traceListener;
 
 import org.springframework.stereotype.Component;
 

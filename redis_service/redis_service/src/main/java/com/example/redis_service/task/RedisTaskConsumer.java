@@ -1,8 +1,8 @@
 package com.example.redis_service.task;
 
-import com.example.redis_service.TraceListener.producer.TraceProducer;
 import com.example.redis_service.dto.RedisEvent;
 import com.example.redis_service.operations.RedisOperationDispatcher;
+import com.example.redis_service.traceListener.producer.TraceProducer;
 import com.rabbitmq.client.Channel;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

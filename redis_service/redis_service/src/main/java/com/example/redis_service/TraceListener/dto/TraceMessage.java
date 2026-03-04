@@ -1,4 +1,4 @@
-package com.example.redis_service.TraceListener.dto;
+package com.example.redis_service.traceListener.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

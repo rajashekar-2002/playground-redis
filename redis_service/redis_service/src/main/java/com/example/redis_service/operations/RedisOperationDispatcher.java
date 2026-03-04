@@ -1,7 +1,8 @@
 package com.example.redis_service.operations;
 
-import com.example.redis_service.TraceListener.producer.TraceProducer;
 import com.example.redis_service.dto.RedisEvent;
+import com.example.redis_service.traceListener.producer.TraceProducer;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;

@@ -4,6 +4,7 @@ import com.example.redis_service.dto.RedisEvent;
 import com.example.redis_service.dto.RedisResponseEvent;
 import com.example.redis_service.models.KeyValueDocument;
 import com.example.redis_service.repository.KeyValueRepository;
+import com.example.redis_service.traceListener.producer.TraceProducer;
 import com.rabbitmq.client.Channel;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -13,7 +14,6 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import com.example.redis_service.TraceListener.producer.TraceProducer;
 
 @Service
 public class MongoTaskConsumer {

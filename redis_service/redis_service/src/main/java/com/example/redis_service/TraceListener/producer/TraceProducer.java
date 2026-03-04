@@ -1,5 +1,6 @@
-package com.example.redis_service.TraceListener.producer;
+package com.example.redis_service.traceListener.producer;
 
+import com.example.redis_service.traceListener.ServiceIdGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class TraceProducer {
         try {
             Map<String, Object> message = new HashMap<>();
             message.put("serviceName", "redis_service");
-            message.put("serviceId", serviceIdGenerator.generateServiceId());
+            message.put("serviceId", serviceIdGenerator.getServiceId());
             message.put("messageId", UUID.randomUUID().toString());
             message.put("payload", payload);
 

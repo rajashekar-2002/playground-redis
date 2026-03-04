@@ -1,5 +1,6 @@
 package com.example.frontend.TraceListener.producer;
 
+import com.example.frontend.TraceListener.ServiceIdGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,8 @@ public class TraceProducer {
     private final ServiceIdGenerator serviceIdGenerator;
 
     public TraceProducer(KafkaTemplate<String, String> kafkaTemplate,
-                         ObjectMapper objectMapper,
-                         ServiceIdGenerator serviceIdGenerator) {
+            ObjectMapper objectMapper,
+            ServiceIdGenerator serviceIdGenerator) {
 
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
@@ -28,7 +29,7 @@ public class TraceProducer {
         try {
             Map<String, Object> message = new HashMap<>();
             message.put("serviceName", "frontend");
-            message.put("serviceId", serviceIdGenerator.getServiceId() );
+            message.put("serviceId", serviceIdGenerator.getServiceId());
             message.put("messageId", UUID.randomUUID().toString());
             message.put("payload", payload);
 

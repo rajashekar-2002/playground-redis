@@ -1,11 +1,11 @@
 package com.example.redis_service.listener;
 
 import com.example.redis_service.dto.RedisEvent;
+import com.example.redis_service.traceListener.producer.TraceProducer;
 import com.example.redis_service.config.RabbitConfig;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-import com.example.redis_service.TraceListener.producer.TraceProducer;
 
 @Service
 public class RedisServiceListener {

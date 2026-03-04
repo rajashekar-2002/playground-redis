@@ -4,7 +4,7 @@ import com.example.redis_service.dto.RedisEvent;
 
 public interface RedisOperationHandler {
 
-    String getOperationType(); // ADD, DELETE, etc.
+    String getOperationType();
 
     void handle(RedisEvent event);
 }
