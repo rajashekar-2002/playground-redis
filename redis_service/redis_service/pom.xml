@@ -23,6 +23,7 @@
 		<java.version>17</java.version>
 	</properties>
 
+
 	<dependencies>
 		<!-- Spring Boot core -->
 		<dependency>
@@ -79,6 +80,7 @@
 	</dependencies>
 
 	<build>
+		<finalName>redis-service</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
