@@ -1,0 +1,30 @@
+server:
+  port: ${SERVER_PORT:8293}
+
+spring:
+  application:
+    name: ${SERVICE_NAME:frontend-service}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    producer:
+      key-serializer: ${KAFKA_PRODUCER_KEY_SERIALIZER:org.apache.kafka.common.serialization.StringSerializer}
+      value-serializer: ${KAFKA_PRODUCER_VALUE_SERIALIZER:org.apache.kafka.common.serialization.StringSerializer}
+      properties:
+        spring:
+          json:
+            add:
+              type:
+                headers: ${KAFKA_JSON_TYPE_HEADERS:false}
+
+    consumer:
+      auto-offset-reset: ${KAFKA_CONSUMER_OFFSET_RESET:latest}
+
+    admin:
+      auto-create: ${KAFKA_ADMIN_AUTO_CREATE:true}
+
+    auto:
+      create:
+        topics:
+          enable: ${KAFKA_AUTO_CREATE_TOPICS:true}
