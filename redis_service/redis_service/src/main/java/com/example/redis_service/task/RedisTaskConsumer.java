@@ -33,15 +33,15 @@ public class RedisTaskConsumer {
         try {
             traceProducer.sendTrace("Received from RabbitMQ : Redis worker queue");
             dispatcher.dispatch(event);
-            traceProducer.sendTrace("Sent to dispatcher");
+            traceProducer.sendTrace("Dispatched operation: " + event.getOperation());
             channel.basicAck(tag, false);
             traceProducer.sendTrace("Acked from Redis worker queue");
 
         } catch (Exception e) {
-            traceProducer.sendTrace("Error in Redis worker queue");
-
+            traceProducer.sendTrace("Error in Redis worker queue: " + e.getMessage());
+            e.printStackTrace(); // always print so we can see root cause
             try {
-                channel.basicNack(tag, false, true);
+                channel.basicNack(tag, false, false); // false = don't requeue, prevents infinite loop
             } catch (Exception nackEx) {
                 nackEx.printStackTrace();
             }

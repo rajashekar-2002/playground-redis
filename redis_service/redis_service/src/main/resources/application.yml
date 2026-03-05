@@ -7,13 +7,11 @@ spring:
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-
     consumer:
       group-id: ${KAFKA_GROUP_ID:redis-service-group}
       key-deserializer: ${KAFKA_CONSUMER_KEY_DESERIALIZER:org.apache.kafka.common.serialization.StringDeserializer}
       value-deserializer: ${KAFKA_CONSUMER_VALUE_DESERIALIZER:org.apache.kafka.common.serialization.StringDeserializer}
       auto-offset-reset: ${KAFKA_CONSUMER_OFFSET_RESET:latest}
-
     auto:
       create:
         topics:
@@ -25,11 +23,10 @@ spring:
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
 
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-
-  data:
+  data:                                  
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
     mongodb:
       host: ${MONGO_HOST:localhost}
       port: ${MONGO_PORT:27017}
