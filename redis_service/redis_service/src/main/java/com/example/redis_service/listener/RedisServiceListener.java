@@ -23,29 +23,16 @@ public class RedisServiceListener {
 
         traceProducer.sendTrace("Received from Kafka topic redis_opr_request_topic");
 
-        // Always send to Redis worker queue
-        rabbitTemplate.convertAndSend(RabbitConfig.REDIS_QUEUE, event);
+        String op = event.getOperation();
 
+        // GET, FETCH_ALL, DELETE, SET_TTL → Redis queue ONLY
+        // ADD, UPDATE → both Redis and Mongo queues
+        rabbitTemplate.convertAndSend(RabbitConfig.REDIS_QUEUE, event);
         traceProducer.sendTrace("Sent to RabbitMQ : Redis worker queue");
 
-        // Only send to Mongo worker queue if operation is not DELETE
-
-        String op = event.getOperation();
-        // if (!"DELETE".equalsIgnoreCase(op) && !"FETCH_ALL".equals(op) &&
-        // !"SET_TTL".equals(op)) {
-        // traceProducer.sendTrace("Sent to RabbitMQ : Mongo worker queue");
-        // rabbitTemplate.convertAndSend(RabbitConfig.MONGO_QUEUE, event); // use your
-        // configured queue
-        // }
-
-        // Send to Mongo ONLY for specific operations
-        if ("DELETE".equalsIgnoreCase(op)
-                || "UPDATE".equalsIgnoreCase(op)
-                || "SET".equalsIgnoreCase(op)) {
-
+        if ("ADD".equalsIgnoreCase(op) || "UPDATE".equalsIgnoreCase(op)) {
             rabbitTemplate.convertAndSend(RabbitConfig.MONGO_QUEUE, event);
             traceProducer.sendTrace("Sent to RabbitMQ : Mongo worker queue");
         }
-
     }
 }

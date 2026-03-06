@@ -23,72 +23,12 @@ public class MongoTaskConsumer {
     private final TraceProducer traceProducer;
 
     public MongoTaskConsumer(KeyValueRepository repository,
-            KafkaTemplate<String, Object> kafkaTemplate, TraceProducer traceProducer) {
+            KafkaTemplate<String, Object> kafkaTemplate,
+            TraceProducer traceProducer) {
         this.repository = repository;
         this.kafkaTemplate = kafkaTemplate;
         this.traceProducer = traceProducer;
     }
-
-    // @RabbitListener(queues = "mongo-queue", containerFactory =
-    // "rabbitListenerContainerFactory")
-    // public void handleMongoTask(RedisEvent event,
-    // Channel channel,
-    // @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
-
-    // try {
-    // traceProducer.sendTrace("Received from RabbitMQ : Mongo worker queue");
-    // // Check if a document with the same key already exists
-    // KeyValueDocument doc = repository.findByKey(event.getKey())
-    // .orElse(null);
-
-    // if (doc != null) {
-    // traceProducer.sendTrace("Updating existing document");
-    // // UPDATE existing
-    // doc.setValue(event.getValue());
-    // doc.setOperation(event.getOperation());
-    // doc.setStatus("SUCCESS");
-    // doc.setUpdatedAt(LocalDateTime.now());
-
-    // } else {
-    // traceProducer.sendTrace("Creating new document");
-    // // CREATE new
-    // doc = new KeyValueDocument();
-    // doc.setId(event.getUuid()); // only set id for new document
-    // doc.setKey(event.getKey());
-    // doc.setValue(event.getValue());
-    // doc.setOperation(event.getOperation());
-    // doc.setStatus("SUCCESS");
-    // doc.setCreatedAt(event.getTimestamp());
-    // doc.setUpdatedAt(LocalDateTime.now());
-    // }
-
-    // repository.save(doc); // insert or update
-
-    // // Send FINAL response to frontend
-    // RedisResponseEvent response = new RedisResponseEvent(
-    // event.getUuid(),
-    // event.getKey(),
-    // event.getOperation(),
-    // "SUCCESS",
-    // "Operation completed successfully",
-    // LocalDateTime.now());
-
-    // kafkaTemplate.send("redis_response_topic", response);
-    // traceProducer.sendTrace("Sent to Kafka : Redis response topic");
-    // // ACK
-    // channel.basicAck(tag, false);
-    // traceProducer.sendTrace("Acked from Mongo worker queue");
-
-    // } catch (Exception e) {
-    // traceProducer.sendTrace("Error in Mongo worker queue");
-    // e.printStackTrace();
-    // try {
-    // channel.basicNack(tag, false, true); // retry
-    // } catch (Exception nackEx) {
-    // nackEx.printStackTrace();
-    // }
-    // }
-    // }
 
     @RabbitListener(queues = "mongo-queue", containerFactory = "rabbitListenerContainerFactory")
     public void handleMongoTask(RedisEvent event,
@@ -96,81 +36,50 @@ public class MongoTaskConsumer {
             @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
         try {
-
             String operation = event.getOperation();
-            traceProducer.sendTrace("Received from RabbitMQ : Mongo worker queue");
+            traceProducer.sendTrace("Received from RabbitMQ : Mongo worker queue | op=" + operation);
 
-            // Ignore read-only operations
-            if ("GET".equalsIgnoreCase(operation)
-                    || "FETCH_ALL".equalsIgnoreCase(operation)
-                    || "SET_TTL".equalsIgnoreCase(operation)) {
-
-                traceProducer.sendTrace("Ignoring read-only operation in Mongo");
+            // Only ADD and UPDATE reach this queue (enforced in RedisServiceListener).
+            // Guard here as a safety net.
+            if (!"ADD".equalsIgnoreCase(operation) && !"UPDATE".equalsIgnoreCase(operation)) {
+                traceProducer.sendTrace("Ignoring unsupported operation in Mongo: " + operation);
                 channel.basicAck(tag, false);
                 return;
             }
 
-            // ---------------- DELETE ----------------
-            if ("DELETE".equalsIgnoreCase(operation)) {
+            KeyValueDocument existing = repository.findByKey(event.getKey()).orElse(null);
 
-                boolean exists = repository.findByKey(event.getKey()).isPresent();
-
-                if (exists) {
-                    repository.deleteByKey(event.getKey());
-
-                    sendResponse(event,
-                            "SUCCESS",
-                            "DELETE operation: Key '" + event.getKey() + "' deleted from MongoDB");
-
-                } else {
-
-                    sendResponse(event,
-                            "NOT_FOUND",
-                            "DELETE operation: Key '" + event.getKey() + "' not found in MongoDB");
-                }
-
-                channel.basicAck(tag, false);
-                return;
-            }
-
-            // ---------------- UPDATE / SET ----------------
-            KeyValueDocument existingDoc = repository.findByKey(event.getKey())
-                    .orElse(null);
-
-            if (existingDoc != null) {
-
-                existingDoc.setValue(event.getValue());
-                existingDoc.setUpdatedAt(LocalDateTime.now());
-                repository.save(existingDoc);
+            if (existing != null) {
+                // UPDATE — key already exists in Mongo
+                existing.setValue(event.getValue());
+                existing.setUpdatedAt(LocalDateTime.now());
+                repository.save(existing);
 
                 sendResponse(event,
-                        "UPDATED",
-                        operation + " operation: Existing key '" + event.getKey()
-                                + "' updated in MongoDB");
+                        "UPDATED_IN_MONGO",
+                        operation + " operation: Key '" + event.getKey() + "' updated in MongoDB");
 
             } else {
-
+                // ADD (or UPDATE where key is new) — insert fresh document
                 KeyValueDocument newDoc = new KeyValueDocument();
                 newDoc.setId(event.getUuid());
                 newDoc.setKey(event.getKey());
                 newDoc.setValue(event.getValue());
                 newDoc.setCreatedAt(event.getTimestamp());
                 newDoc.setUpdatedAt(LocalDateTime.now());
-
                 repository.save(newDoc);
 
                 sendResponse(event,
-                        "CREATED",
-                        operation + " operation: New key '" + event.getKey()
-                                + "' created in MongoDB");
+                        "CREATED_IN_MONGO",
+                        operation + " operation: Key '" + event.getKey() + "' created in MongoDB");
             }
 
             channel.basicAck(tag, false);
+            traceProducer.sendTrace("Acked from Mongo worker queue");
 
         } catch (Exception e) {
-
             traceProducer.sendTrace("Error in Mongo worker queue");
-
+            e.printStackTrace();
             try {
                 channel.basicNack(tag, false, true);
             } catch (Exception nackEx) {
@@ -180,15 +89,15 @@ public class MongoTaskConsumer {
     }
 
     private void sendResponse(RedisEvent event, String status, String message) {
-
         RedisResponseEvent response = new RedisResponseEvent(
                 event.getUuid(),
                 event.getKey(),
-                event.getOperation(), // operation explicitly included
+                event.getOperation(),
                 status,
                 message,
                 LocalDateTime.now());
 
         kafkaTemplate.send("redis_response_topic", response);
+        traceProducer.sendTrace("Sent to Kafka : Redis response topic | status=" + status);
     }
 }

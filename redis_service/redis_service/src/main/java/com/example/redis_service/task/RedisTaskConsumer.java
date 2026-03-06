@@ -1,3 +1,4 @@
+
 package com.example.redis_service.task;
 
 import com.example.redis_service.dto.RedisEvent;
@@ -33,15 +34,15 @@ public class RedisTaskConsumer {
         try {
             traceProducer.sendTrace("Received from RabbitMQ : Redis worker queue");
             dispatcher.dispatch(event);
-            traceProducer.sendTrace("Dispatched operation: " + event.getOperation());
+            traceProducer.sendTrace("Sent to dispatcher");
             channel.basicAck(tag, false);
             traceProducer.sendTrace("Acked from Redis worker queue");
 
         } catch (Exception e) {
-            traceProducer.sendTrace("Error in Redis worker queue: " + e.getMessage());
-            e.printStackTrace(); // always print so we can see root cause
+            traceProducer.sendTrace("Error in Redis worker queue");
+
             try {
-                channel.basicNack(tag, false, false); // false = don't requeue, prevents infinite loop
+                channel.basicNack(tag, false, true);
             } catch (Exception nackEx) {
                 nackEx.printStackTrace();
             }
