@@ -17,7 +17,7 @@
 
 
 server:
-  port: ${SERVER_PORT:0}
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:

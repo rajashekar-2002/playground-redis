@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-service
+  namespace: apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-service
+  template:
+    metadata:
+      labels:
+        app: frontend-service
+    spec:
+      containers:
+      - name: frontend-service
+        image: rajashekarganiger2002/frontend-service:latest
+        ports:
+        - containerPort: 8293
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-broker.infra.svc.cluster.local:9092"
+        - name: KAFKA_HOST
+          value: "kafka-broker.infra.svc.cluster.local"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8293
+          failureThreshold: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8293
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8293
+          initialDelaySeconds: 10
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 3

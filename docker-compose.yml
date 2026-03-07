@@ -109,6 +109,8 @@ services:
       dockerfile: Dockerfile
     image: trace-service:latest
     container_name: trace-service
+    ports:
+      - "8080:8080"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_GROUP_ID: trace-service-group
