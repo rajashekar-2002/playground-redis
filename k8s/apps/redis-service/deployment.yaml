@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: redis-service
-        image: rajashekarganiger2002/redis-service:latest
+        image: rajashekarganiger2002/redis-service:v2
         ports:
         - containerPort: 8090
         envFrom:

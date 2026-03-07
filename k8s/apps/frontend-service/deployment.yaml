@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: frontend-service
-        image: rajashekarganiger2002/frontend-service:latest
+        image: rajashekarganiger2002/frontend-service:v2
         ports:
         - containerPort: 8293
         env:

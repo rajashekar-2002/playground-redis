@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: trace-service
-        image: rajashekarganiger2002/trace-service:latest
+        image: rajashekarganiger2002/trace-service:v2
         ports:
         - containerPort: 8080
         env:
