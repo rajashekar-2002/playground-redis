@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: infra
+spec:
+  serviceName: mongodb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:7.0
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_DATABASE
+          value: kv_database
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        readinessProbe:
+          exec:
+            command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+          initialDelaySeconds: 40
+          periodSeconds: 10
+          timeoutSeconds: 15
+          failureThreshold: 6
+        livenessProbe:
+          exec:
+            command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+          initialDelaySeconds: 90
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 6
+        volumeMounts:
+        - name: mongodb-data
+          mountPath: /data/db
+  volumeClaimTemplates:
+  - metadata:
+      name: mongodb-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 2Gi

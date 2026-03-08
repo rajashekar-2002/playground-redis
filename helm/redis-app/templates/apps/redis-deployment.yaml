@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-service
+  namespace: {{ .Values.namespace.apps }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-service
+  template:
+    metadata:
+      labels:
+        app: redis-service
+      annotations:
+        proxy.istio.io/config: '{"holdApplicationUntilProxyStarts": true}'
+        sidecar.istio.io/rewriteAppHTTPProbers: "false"
+    spec:
+      containers:
+      - name: redis-service
+        image: {{ .Values.images.redisService.repository }}:{{ .Values.images.redisService.tag }}
+        ports:
+        - containerPort: 8090
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: {{ .Values.kafka.bootstrapServers }}
+        - name: KAFKA_GROUP_ID
+          value: "redisListener"
+        - name: RABBITMQ_HOST
+          value: {{ .Values.rabbitmq.host }}
+        - name: RABBITMQ_PORT
+          value: "{{ .Values.rabbitmq.port }}"
+        - name: RABBITMQ_USERNAME
+          value: {{ .Values.rabbitmq.username }}
+        - name: RABBITMQ_PASSWORD
+          value: {{ .Values.rabbitmq.password }}
+        - name: REDIS_HOST
+          value: {{ .Values.redis.host }}
+        - name: REDIS_PORT
+          value: "{{ .Values.redis.port }}"
+        - name: MONGO_HOST
+          value: {{ .Values.mongodb.host }}
+        - name: MONGO_PORT
+          value: "{{ .Values.mongodb.port }}"
+        - name: MONGO_DATABASE
+          value: {{ .Values.mongodb.database }}
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+        startupProbe:
+          tcpSocket:
+            port: 8090
+          initialDelaySeconds: 30
+          failureThreshold: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 8090
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          tcpSocket:
+            port: 8090
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 3

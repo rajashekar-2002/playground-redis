@@ -1,0 +1,32 @@
+namespace:
+  infra: infra
+  apps: apps
+
+images:
+  frontendService:
+    repository: rajashekarganiger2002/frontend-service
+    tag: v2
+  traceService:
+    repository: rajashekarganiger2002/trace-service
+    tag: v2
+  redisService:
+    repository: rajashekarganiger2002/redis-service
+    tag: v2
+
+kafka:
+  bootstrapServers: kafka-broker.infra.svc.cluster.local:9092
+
+rabbitmq:
+  host: rabbitmq.infra.svc.cluster.local
+  port: 5672
+  username: guest
+  password: guest
+
+redis:
+  host: redis.infra.svc.cluster.local
+  port: 6379
+
+mongodb:
+  host: mongodb.infra.svc.cluster.local
+  port: 27017
+  database: kv_database
